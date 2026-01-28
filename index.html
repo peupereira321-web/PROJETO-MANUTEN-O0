@@ -1,4 +1,4 @@
-<!doctype html>
+  <!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
@@ -236,24 +236,6 @@
             <div class="row">
               <input id="dashSearch" placeholder="Filtrar cliente..." style="min-width:260px" />
             </div>
-            <div class="row">
-  <input id="dashSearch" placeholder="Filtrar cliente..." style="min-width:220px" />
-
-  <div class="field" style="min-width:160px">
-    <label style="margin:0 0 6px">Início</label>
-    <input id="dashIni" type="date" />
-  </div>
-
-  <div class="field" style="min-width:160px">
-    <label style="margin:0 0 6px">Fim</label>
-    <input id="dashFim" type="date" />
-  </div>
-
-  <button class="btn" id="btnAplicarPeriodo">Aplicar</button>
-  <button class="btn" id="btnMesAtual">Mês atual</button>
-  <button class="btn" id="btnExportCSV">Exportar CSV</button>
-</div>
-
           </div>
           <div class="kpis" id="kpis"></div>
         </div>
@@ -284,33 +266,6 @@
               <h2>Resumo por Cliente</h2>
               <p class="sub">Prazo (Data limite) • Previsto (produtividade) • Progresso Preventiva</p>
             </div>
-<div class="card full">
-  <div class="h">
-    <div>
-      <h2>Relatório (período selecionado)</h2>
-      <p class="sub">Tabela detalhada pra lembrar como foi o mês</p>
-    </div>
-  </div>
-
-  <div style="overflow:auto;max-height:560px">
-    <table>
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Cliente</th>
-          <th class="center">Tipo</th>
-          <th class="center">Status</th>
-          <th class="center">Prog.</th>
-          <th class="center">Exec.</th>
-          <th class="right">Prazo OS</th>
-          <th class="center">Atraso</th>
-        </tr>
-      </thead>
-      <tbody id="relTable"></tbody>
-    </table>
-  </div>
-</div>
-
           </div>
 
           <div style="overflow:auto;max-height:560px">
@@ -360,6 +315,9 @@
               <input id="cli_nome" placeholder="Ex: MATRIZ / FILIAL / CLIENTE X" />
             </div>
             <div class="field">
+              <label>Data Limite (Prazo)</label>
+              <input id="cli_limite" type="date" />
+            </div>
           </div>
 
           <div class="row">
@@ -429,10 +387,6 @@
               <label>Data de abertura</label>
               <input id="os_data" type="date" />
             </div>
-            <div class="field">
-  <label>Prazo da OS (Data limite)</label>
-  <input id="os_limite" type="date" />
-          </div>
             <div class="field">
               <label>Cliente</label>
               <select id="os_cliente"></select>
@@ -769,15 +723,13 @@
     // ✅ COLE AQUI o config do seu App Web (Firebase Console → Project settings → Your apps → Web)
     // Ex:
     // const firebaseConfig = { apiKey:"...", authDomain:"...", projectId:"...", appId:"..." };
-    const firebaseConfig = {
-  apiKey: "AIzaSyAK_HgzYUlc7od-gqJOkEAnOedmY4KJ66w",
+    const firebaseConfig = { apiKey: "AIzaSyAK_HgzYUlc7od-gqJOkEAnOedmY4KJ66w",
   authDomain: "manutencao-suporte.firebaseapp.com",
   projectId: "manutencao-suporte",
   storageBucket: "manutencao-suporte.firebasestorage.app",
   messagingSenderId: "522009429363",
   appId: "1:522009429363:web:24ecfbf3306d2aa7cf3106"
 };
-
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
@@ -994,21 +946,10 @@
     // KPIs
     // =============================
     function renderKPIs(){
-     const totalOS = osList.length;
-
-const abertas = osList.filter(o=>osStatus(o)!=="Fechada").length; // qtd de OS em aberto (registros)
-const parciais = osList.filter(o=>osStatus(o)==="Parcial").length;
-const fechadas = osList.filter(o=>osStatus(o)==="Fechada").length;
-
-// ✅ NOVO: total programado em aberto (saldo)
-const pendenteProg = osList
-  .filter(o=>osStatus(o)!=="Fechada")
-  .reduce((acc, o) => {
-    const prog = Math.max(1, Number(o.qtdProg || 1));
-    const ex = osExecuted(o);
-    const saldo = Math.max(0, prog - ex);
-    return acc + saldo;
-  }, 0);
+      const totalOS = osList.length;
+      const abertas = osList.filter(o=>osStatus(o)==="Aberta").length;
+      const parciais = osList.filter(o=>osStatus(o)==="Parcial").length;
+      const fechadas = osList.filter(o=>osStatus(o)==="Fechada").length;
 
       const prevExec = osList
         .filter(o=>o.tipo==="Preventiva")
@@ -1022,7 +963,7 @@ const pendenteProg = osList
       const kpis = [
         {label:"Clientes", val: clientes.length, dot:"info"},
         {label:"OS (Total)", val: totalOS, dot:"primary"},
-        {label:"OS Pendentes (Prog.)", val: pendenteProg, dot:"info"},
+        {label:"OS Abertas", val: abertas, dot:"info"},
         {label:"OS Parciais", val: parciais, dot:"warn"},
         {label:"OS Fechadas", val: fechadas, dot:"ok"},
         {label:"Exec. Preventiva (qtd)", val: Math.round(prevExec), dot:"ok"},
@@ -1044,52 +985,6 @@ const pendenteProg = osList
     // Dashboard table
     // =============================
     $("dashSearch").addEventListener("input", renderDashTable);
-function startOfMonthISO(d = new Date()){
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,"0");
-  return `${y}-${m}-01`;
-}
-function endOfMonthISO(d = new Date()){
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,"0");
-  const last = new Date(y, d.getMonth()+1, 0).getDate();
-  return `${y}-${m}-${String(last).padStart(2,"0")}`;
-}
-
-let dashIni = "";
-let dashFim = "";
-
-function initPeriodoDashboard(){
-  // padrão: mês atual
-  const now = new Date();
-  dashIni = startOfMonthISO(now);
-  dashFim = endOfMonthISO(now);
-
-  if($("dashIni")) $("dashIni").value = dashIni;
-  if($("dashFim")) $("dashFim").value = dashFim;
-}
-
-function inRange(iso){
-  if(!iso) return false;
-  if(dashIni && iso < dashIni) return false;
-  if(dashFim && iso > dashFim) return false;
-  return true;
-}
-
-$("btnAplicarPeriodo")?.addEventListener("click", ()=>{
-  dashIni = $("dashIni").value || "";
-  dashFim = $("dashFim").value || "";
-  renderAll();
-});
-
-$("btnMesAtual")?.addEventListener("click", ()=>{
-  const now = new Date();
-  dashIni = startOfMonthISO(now);
-  dashFim = endOfMonthISO(now);
-  $("dashIni").value = dashIni;
-  $("dashFim").value = dashFim;
-  renderAll();
-});
 
     function renderDashTable(){
       const q = ($("dashSearch").value || "").trim().toLowerCase();
@@ -1280,7 +1175,6 @@ $("btnMesAtual")?.addEventListener("click", ()=>{
 
       const clienteId = $("os_cliente").value;
       const data = $("os_data").value || todayISO();
-      const dataLimite = $("os_limite").value || "";
       const tipo = $("os_tipo").value;
       const colabId = $("os_colab").value || "";
       const qtdProg = Math.max(1, Number($("os_prog").value || 1));
@@ -1399,20 +1293,7 @@ $("btnMesAtual")?.addEventListener("click", ()=>{
         if(id){
           await updateDoc(doc(db,"colabs",id), payload);
         }else{
-          await addDoc(collection(db,"os"), {
-  data,
-  dataLimite,      // <<<<< AQUI (prazo da OS)
-  clienteId,
-  tipo,
-  colabId,
-  qtdProg,
-  obs,
-  exec: [],
-  closedAt: "",
-  createdAt: serverTimestamp(),
-  updatedAt: serverTimestamp()
-});
-
+          await addDoc(collection(db,"colabs"), { ...payload, createdAt: serverTimestamp() });
         }
         clearColabForm();
       }catch(e){
@@ -1938,4 +1819,3 @@ $("btnMesAtual")?.addEventListener("click", ()=>{
   </script>
 </body>
 </html>
-
