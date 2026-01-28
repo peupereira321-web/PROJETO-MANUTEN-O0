@@ -1,4 +1,4 @@
-  <!doctype html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
@@ -947,9 +947,20 @@
     // =============================
     function renderKPIs(){
       const totalOS = osList.length;
-      const abertas = osList.filter(o=>osStatus(o)==="Aberta").length;
-      const parciais = osList.filter(o=>osStatus(o)==="Parcial").length;
-      const fechadas = osList.filter(o=>osStatus(o)==="Fechada").length;
+
+const abertas = osList.filter(o=>osStatus(o)!=="Fechada").length; // qtd de OS em aberto (registros)
+const parciais = osList.filter(o=>osStatus(o)==="Parcial").length;
+const fechadas = osList.filter(o=>osStatus(o)==="Fechada").length;
+
+// ✅ NOVO: total programado em aberto (saldo)
+const pendenteProg = osList
+  .filter(o=>osStatus(o)!=="Fechada")
+  .reduce((acc, o) => {
+    const prog = Math.max(1, Number(o.qtdProg || 1));
+    const ex = osExecuted(o);
+    const saldo = Math.max(0, prog - ex);
+    return acc + saldo;
+  }, 0);
 
       const prevExec = osList
         .filter(o=>o.tipo==="Preventiva")
@@ -963,7 +974,7 @@
       const kpis = [
         {label:"Clientes", val: clientes.length, dot:"info"},
         {label:"OS (Total)", val: totalOS, dot:"primary"},
-        {label:"OS Abertas", val: abertas, dot:"info"},
+        {label:"OS Pendentes (Prog.)", val: pendenteProg, dot:"info"},
         {label:"OS Parciais", val: parciais, dot:"warn"},
         {label:"OS Fechadas", val: fechadas, dot:"ok"},
         {label:"Exec. Preventiva (qtd)", val: Math.round(prevExec), dot:"ok"},
@@ -1819,3 +1830,4 @@
   </script>
 </body>
 </html>
+
