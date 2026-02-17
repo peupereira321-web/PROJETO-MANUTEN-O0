@@ -3,1831 +3,613 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Painel de Manutenção (TV)</title>
+  <title>PCM - Suporte Manutenção</title>
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
   <style>
     :root{
-      --bg:#0b1220;
-      --card: rgba(255,255,255,.06);
-      --text:#e5e7eb;
-      --muted:#94a3b8;
-      --line: rgba(255,255,255,.12);
-      --primary:#60a5fa;
-      --warn:#fbbf24;
-      --ok:#34d399;
-      --bad:#fb7185;
-      --info:#22d3ee;
-      --shadow: 0 20px 50px rgba(0,0,0,.35);
-      --radius: 18px;
+      --bg: #0f172a; --surface: #1e293b; --card-bg: rgba(30, 41, 59, 0.7);
+      --border: rgba(255,255,255,0.08); --text-main: #f8fafc; --text-muted: #94a3b8;
+      --primary: #3b82f6; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --info: #06b6d4; --purple: #8b5cf6;
+      --radius: 8px; --font: 'Segoe UI', system-ui, sans-serif;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background: radial-gradient(1200px 800px at 20% 0%, #14264a 0%, var(--bg) 55%) fixed;
-      color:var(--text);
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0; font-family: var(--font); background-color: var(--bg);
+      color: var(--text-main); height: 100vh; overflow: hidden;
+      display: flex; flex-direction: column;
     }
-    header{
-      position: sticky; top:0; z-index:10;
-      background: linear-gradient(180deg, rgba(11,18,32,.92) 0%, rgba(11,18,32,.80) 100%);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--line);
+    
+    header {
+      background: rgba(15, 23, 42, 0.9); border-bottom: 1px solid var(--border);
+      padding: 0 20px; flex-shrink: 0; height: 60px; display: flex; align-items: center;
     }
-    .wrap{max-width:1500px;margin:0 auto;padding:18px}
-    .top{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;}
-    .brand{display:flex;gap:12px;align-items:center;font-weight:900}
-    .brand .title{font-size:18px}
-    .brand .subtitle{font-size:12px;color:var(--muted);font-weight:700}
-    .pill{
-      font-size:12px;color:var(--muted);
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.05);
-      padding:8px 12px;border-radius:999px;
-      display:flex;gap:10px;align-items:center;
-    }
-    .clock{font-variant-numeric: tabular-nums;color:var(--text);font-weight:900;letter-spacing:.3px}
-    nav{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .tab{
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.05);
-      padding:10px 12px;border-radius:999px;
-      cursor:pointer;font-weight:900;color:var(--text);
-    }
-    .tab.active{border-color: rgba(96,165,250,.55); box-shadow: 0 0 0 4px rgba(96,165,250,.15)}
-    .btn{
-      border:none;border-radius:999px;
-      padding:10px 12px;
-      background: rgba(96,165,250,.18);
-      color:var(--text);
-      font-weight:900;
-      cursor:pointer;
-      border:1px solid rgba(96,165,250,.35);
-    }
-    .btn:hover{filter:brightness(1.08)}
-    .btn.danger{background: rgba(251,113,133,.15); border:1px solid rgba(251,113,133,.35);}
+    .top-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-text h1 { margin: 0; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .brand-text p { margin: 0; font-size: 10px; color: var(--text-muted); }
 
-    main{padding:18px}
-    .grid{display:grid;grid-template-columns: repeat(12, 1fr);gap:14px;}
-    .card{
-      background: linear-gradient(180deg, var(--card) 0%, rgba(255,255,255,.04) 100%);
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding:14px;
+    /* Relógio e Data */
+    .datetime-box {
+        display: flex; flex-direction: column; align-items: flex-end; margin-right: 15px;
     }
-    .h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
-    h2{margin:0;font-size:16px}
-    .sub{margin:0;color:var(--muted);font-size:12px;font-weight:700}
-    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
-    .kpi{
-      border:1px solid var(--line);
-      border-radius: 18px;
-      padding:14px;
-      background: linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,.04) 100%);
-      display:flex;justify-content:space-between;align-items:center;gap:12px;
-    }
-    .kpi .label{font-size:12px;color:var(--muted);font-weight:1000;text-transform:uppercase;letter-spacing:.8px}
-    .kpi .val{font-size:32px;font-weight:1000;line-height:1}
-    .dot{width:12px;height:12px;border-radius:99px}
-    .dot.primary{background:var(--primary)}
-    .dot.warn{background:var(--warn)}
-    .dot.ok{background:var(--ok)}
-    .dot.bad{background:var(--bad)}
-    .dot.info{background:var(--info)}
+    .clock-time { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; color: var(--primary); }
+    .clock-date { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
 
-    .two{grid-column: span 6}
-    .full{grid-column:1/-1}
-    .muted{color:var(--muted)}
-    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-    .field{flex:1;min-width:180px}
-    label{display:block;font-size:12px;color:var(--muted);font-weight:1000;margin-bottom:6px}
-    input, select, textarea{
-      width:100%;
-      padding:10px 10px;
-      border:1px solid var(--line);
-      border-radius: 14px;
-      outline:none;
-      background: rgba(255,255,255,.04);
-      color: var(--text);
-      font-size:14px;
+    nav { display: flex; gap: 4px; background: rgba(0,0,0,0.2); padding: 3px; border-radius: 99px; border: 1px solid var(--border); }
+    .tab {
+      background: transparent; border: none; color: var(--text-muted);
+      padding: 5px 12px; border-radius: 99px; cursor: pointer;
+      font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 5px;
     }
-    textarea{min-height:84px;resize:vertical}
-    table{width:100%;border-collapse: collapse}
-    th, td{
-      border-bottom:1px solid var(--line);
-      padding:10px 8px;
-      text-align:left;
-      vertical-align:middle;
-      font-size:13px;
-    }
-    th{font-size:12px;color:var(--muted);font-weight:1000;text-transform:uppercase;letter-spacing:.7px}
-    .right{text-align:right}
-    .center{text-align:center}
-    .badge{
-      display:inline-flex;align-items:center;gap:6px;
-      border:1px solid var(--line);
-      padding:6px 10px;border-radius:999px;
-      font-size:12px;font-weight:1000;
-      background: rgba(255,255,255,.04);
-      white-space:nowrap;
-    }
-    .badge.ok{border-color: rgba(52,211,153,.35); background: rgba(52,211,153,.10); color: var(--ok)}
-    .badge.warn{border-color: rgba(251,191,36,.35); background: rgba(251,191,36,.10); color: var(--warn)}
-    .badge.bad{border-color: rgba(251,113,133,.35); background: rgba(251,113,133,.10); color: var(--bad)}
-    .badge.info{border-color: rgba(34,211,238,.35); background: rgba(34,211,238,.10); color: var(--info)}
-
-    .bar{
-      width:170px; max-width: 100%;
-      height:18px;border-radius:999px;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.04);
-      position:relative; overflow:hidden;
-    }
-    .bar > span{display:block;height:100%;width:0%;background: linear-gradient(90deg, rgba(96,165,250,.95), rgba(34,211,238,.8));}
-    .bar b{
-      position:absolute;inset:0;
-      display:flex;align-items:center;justify-content:center;
-      font-size:11px;color: var(--text);
-      text-shadow: 0 2px 8px rgba(0,0,0,.45);
+    .tab:hover { color: var(--text-main); }
+    .tab.active { background: var(--surface); color: var(--primary); border: 1px solid var(--border); }
+    
+    main.wrap {
+      flex: 1; padding: 15px; display: flex; flex-direction: column; overflow: hidden; width: 100%; max-width: 100%;
     }
 
-    .section{display:none}
-    .section.active{display:block}
+    .section { display: none; height: 100%; flex-direction: column; gap: 15px; }
+    .section.active { display: flex; }
 
-    .chartWrap{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    @media (max-width: 980px){.chartWrap{grid-template-columns:1fr}}
-    canvas{
-      width:100%;
-      height:300px;
-      border:1px solid var(--line);
-      border-radius: 18px;
-      background: rgba(255,255,255,.03);
+    /* KPIs */
+    .kpi-row {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; flex-shrink: 0;
+    }
+    .kpi-box {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 10px 15px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .kpi-val { font-size: 24px; font-weight: 800; line-height: 1; }
+    
+    /* Layout Dividido */
+    .content-row {
+      display: flex; gap: 15px; flex: 1; min-height: 0; 
+    }
+    .col-table {
+      flex: 2; display: flex; flex-direction: column;
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; 
+    }
+    .col-charts {
+      flex: 1; display: flex; flex-direction: column; gap: 15px;
+    }
+    .chart-card {
+      flex: 1; background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 10px; display: flex; flex-direction: column;
+      min-height: 0;
+    }
+    .chart-container { flex: 1; position: relative; width: 100%; min-height: 0; }
+
+    /* Tabela */
+    .table-header { padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.1); gap: 10px; }
+    .table-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; }
+    
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th {
+      position: sticky; top: 0; background: #1e293b; z-index: 10;
+      text-align: left; padding: 10px; color: var(--text-muted); text-transform: uppercase; font-size: 10px; border-bottom: 1px solid var(--border);
+    }
+    td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* UI Components */
+    .card-title { font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 5px; }
+    .badge { padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; display: inline-block; }
+    .badge.info { background: rgba(6, 182, 212, 0.15); color: var(--info); border: 1px solid rgba(6, 182, 212, 0.3); }
+    .badge.success { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge.warning { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge.danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+    
+    @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+    .badge.piscar { animation: pulse-red 1.5s infinite; border: 1px solid var(--danger); }
+
+    .late-tag {
+        display: inline-flex; align-items: center; gap: 4px;
+        background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: var(--danger);
+        font-weight: 800; font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-top: 4px;
     }
 
-    /* Modo TV */
-    body.tv .wrap{max-width: 1800px}
-    body.tv .brand .title{font-size:22px}
-    body.tv .kpi .val{font-size:46px}
-    body.tv table td, body.tv table th{font-size:14px}
+    input, select { background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; padding: 6px 10px; border-radius: 4px; outline: none; font-size: 12px; }
+    select option { background: #1e293b; color: white; }
+    
+    .btn { background: var(--surface); border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .btn.primary { background: var(--primary); border: none; }
+    .btn.sm { font-size: 10px; padding: 3px 6px; }
 
-    /* Drawer */
-    .drawer{
-      position:fixed; inset:0; display:none;
-      background: rgba(0,0,0,.55);
-      padding:22px; z-index: 999;
-    }
-    .drawer.open{display:block}
-    .drawer .panel{
-      max-width: 1400px;
-      margin: 0 auto;
-      border-radius: 22px;
-      border:1px solid var(--line);
-      background: radial-gradient(1000px 700px at 20% 0%, rgba(20,38,74,.95) 0%, rgba(11,18,32,.95) 55%);
-      box-shadow: 0 30px 80px rgba(0,0,0,.55);
-      padding:16px;
-    }
-    .drawer .panel header{
-      position:static;
-      background: transparent;
-      border-bottom: 1px solid var(--line);
-      margin-bottom: 10px;
-    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+    .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 100; opacity: 0; visibility: hidden; transition: 0.3s; }
+    .drawer-overlay.open { opacity: 1; visibility: visible; }
+    .drawer-panel { position: absolute; top: 10px; bottom: 10px; right: 10px; width: 500px; background: #1e293b; border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; transform: translateX(100%); transition: 0.3s; box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
+    .drawer-overlay.open .drawer-panel { transform: translateX(0); }
+    .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 999; }
+    .toast { background: var(--surface); border-left: 4px solid var(--primary); padding: 10px 15px; margin-top: 10px; border-radius: 4px; display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s; border: 1px solid var(--border); }
+    @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    
+    .normal-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 15px; overflow-y: auto; padding-right: 5px; }
+    .col-12 { grid-column: span 12; } .col-4 { grid-column: span 4; } .col-8 { grid-column: span 8; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 15px; }
+    .form-row { display: flex; gap: 10px; margin-bottom: 10px; } .form-group { flex: 1; } label { display: block; font-size: 10px; color: var(--text-muted); margin-bottom: 3px; text-transform: uppercase; }
   </style>
 </head>
 
 <body>
   <header>
-    <div class="wrap top">
+    <div class="top-bar">
       <div class="brand">
-        <div>
-          <div class="title">Suporte Climatização</div>
-          <div class="subtitle">Clientes • Ordens de Serviço (OS) • Prazo • Previsto (por produtividade)</div>
-        </div>
+        <span class="material-symbols-rounded" style="color:var(--primary)">hvac</span>
+        <div class="brand-text"><h1>SUPORTE MANUTENÇÃO</h1><p>Painel de Gestão</p></div>
       </div>
-
-      <div class="row">
-        <div class="pill">
-          <span id="todayPill">Hoje: —</span>
-          <span class="clock" id="clockPill">—:—</span>
+      
+      <div style="display: flex; align-items: center;">
+        <div class="datetime-box">
+            <div class="clock-time" id="realTimeClock">--:--:--</div>
+            <div class="clock-date" id="realTimeDate">--/--/----</div>
         </div>
 
         <nav>
-          <button class="tab active" data-tab="dash">Dashboard</button>
-          <button class="tab" data-tab="clientes">Clientes</button>
-          <button class="tab" data-tab="os">OS</button>
-          <button class="tab" data-tab="colabs">Colaboradores</button>
-          <button class="tab" data-tab="backup">Backup</button>
-          <button class="btn" id="btnTV">Modo TV</button>
+          <button class="tab active" data-tab="dash"><span class="material-symbols-rounded" style="font-size:16px">dashboard</span> Dash</button>
+          <button class="tab" data-tab="clientes"><span class="material-symbols-rounded" style="font-size:16px">business</span> Clientes</button>
+          <button class="tab" data-tab="os"><span class="material-symbols-rounded" style="font-size:16px">assignment</span> OS</button>
+          <button class="tab" data-tab="colabs"><span class="material-symbols-rounded" style="font-size:16px">group</span> Equipe</button>
+          <button class="tab" data-tab="config"><span class="material-symbols-rounded" style="font-size:16px">settings</span></button>
         </nav>
       </div>
     </div>
   </header>
 
   <main class="wrap">
-    <!-- DASH -->
-    <section class="section active" id="sec-dash">
-      <div class="grid">
-        <div class="card full">
-          <div class="h">
-            <div>
-              <h2>Indicadores</h2>
-              <p class="sub">OS: Abertas/Parciais/Fechadas • Execução • Atrasos</p>
+    
+    <section id="sec-dash" class="section active">
+      
+      <div class="kpi-row" id="kpiContainer"></div>
+
+      <div class="content-row">
+        
+        <div class="col-table">
+          <div class="table-header">
+            <div style="display:flex; flex-direction:column;">
+                <div class="card-title" style="margin:0">Carteira de Clientes</div>
+                <div style="font-size:10px; color:var(--text-muted)">Monitoramento PMOC</div>
             </div>
-            <div class="row">
-              <input id="dashSearch" placeholder="Filtrar cliente..." style="min-width:260px" />
+            
+            <div style="display:flex; gap:10px;">
+                <select id="dashSort" style="width: 140px;">
+                    <option value="name">Ordem A-Z</option>
+                    <option value="equip_desc">Mais Equipamentos</option>
+                    <option value="equip_asc">Menos Equipamentos</option>
+                    <option value="atraso">Atrasados Primeiro</option>
+                </select>
+                <input id="dashSearch" placeholder="Buscar cliente..." style="width: 150px;" />
             </div>
           </div>
-          <div class="kpis" id="kpis"></div>
-        </div>
-
-        <div class="card full">
-          <div class="h">
-            <div>
-              <h2>Gráficos gerais</h2>
-              <p class="sub">Linha 14 dias: OS abertas x OS fechadas • Barras: distribuição</p>
-            </div>
-          </div>
-
-          <div class="chartWrap">
-            <div>
-              <div class="muted" style="font-weight:1000;margin:6px 0 10px">OS abertas x OS fechadas (últimos 14 dias)</div>
-              <canvas id="chartLinha" width="900" height="380"></canvas>
-            </div>
-            <div>
-              <div class="muted" style="font-weight:1000;margin:6px 0 10px">Distribuição geral</div>
-              <canvas id="chartBarras" width="900" height="380"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <div class="card full">
-          <div class="h">
-            <div>
-              <h2>Resumo por Cliente</h2>
-              <p class="sub">Prazo (Data limite) • Previsto (produtividade) • Progresso Preventiva</p>
-            </div>
-          </div>
-
-          <div style="overflow:auto;max-height:560px">
+          
+          <div class="table-scroll">
             <table>
               <thead>
                 <tr>
                   <th>Cliente</th>
-                  <th>Status</th>
-                  <th class="center">Prev (%)</th>
-                  <th class="right">Data Limite</th>
-                  <th class="right">Dias</th>
-                  <th class="right">Previsto fim</th>
-                  <th class="center">Prev Exec.</th>
-                  <th class="center">OS Abertas</th>
-                  <th class="right">Ações</th>
+                  <th style="width:100px; text-align:center">Status</th>
+                  <th style="text-align:center">Progresso (Prev)</th>
+                  <th style="text-align:right">Prazo Limite</th>
+                  <th style="text-align:right">Detalhes</th>
                 </tr>
               </thead>
-              <tbody id="dashTable"></tbody>
+              <tbody id="dashTableBody"></tbody>
             </table>
           </div>
+        </div>
 
-          <div class="muted" style="margin-top:10px">
-            Controle por <b>Ordem de Serviço (OS)</b>: cada OS tem <b>Qtd Programada</b> e você lança a <b>execução parcial por dia</b>.
-            Status automático: <b>Aberta</b> (0), <b>Parcial</b> (1..programada-1), <b>Fechada</b> (executado = programada).
+        <div class="col-charts">
+          <div class="chart-card">
+            <div class="card-title">Programado x Realizado (14d)</div>
+            <div class="chart-container">
+              <canvas id="chartLine"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="card-title">Progresso Preventivas (Equipamentos)</div>
+            <div class="chart-container">
+              <canvas id="chartBar"></canvas>
+            </div>
           </div>
         </div>
+
       </div>
     </section>
 
-    <!-- CLIENTES -->
-    <section class="section" id="sec-clientes">
-      <div class="grid">
-        <div class="card two">
-          <div class="h">
-            <div>
-              <h2>Novo / Editar Cliente</h2>
-              <p class="sub">Prazo (Data limite) + meta Preventiva + responsável</p>
-            </div>
-            <span class="badge info" id="clienteMode">Modo: Novo</span>
-          </div>
-
+    <section id="sec-clientes" class="section">
+      <div class="normal-grid">
+        <div class="col-4 card">
+          <div class="card-title">Novo Cliente</div>
           <input type="hidden" id="cli_id" />
-
-          <div class="row">
-            <div class="field">
-              <label>Nome do Cliente</label>
-              <input id="cli_nome" placeholder="Ex: MATRIZ / FILIAL / CLIENTE X" />
-            </div>
-            <div class="field">
-              <label>Data Limite (Prazo)</label>
-              <input id="cli_limite" type="date" />
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label>Qtd Equipamentos</label>
-              <input id="cli_qtd" type="number" min="0" placeholder="0" />
-            </div>
-            <div class="field">
-              <label>Responsável (Colaborador)</label>
-              <select id="cli_resp"></select>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label>Meta Preventivas (padrão = Qtd Equip.)</label>
-              <input id="cli_meta_prev" type="number" min="0" placeholder="(deixa vazio pra usar Qtd Equip.)" />
-            </div>
-          </div>
-
-          <div class="row">
-            <button class="btn" id="btnCliSave">Salvar</button>
-            <button class="btn" id="btnCliCancel">Cancelar</button>
-          </div>
+          <div class="form-row"><div class="form-group"><label>Nome</label><input id="cli_nome" style="width:100%" /></div></div>
+          <div class="form-row"><div class="form-group"><label>Prazo</label><input type="date" id="cli_limite" style="width:100%" /></div></div>
+          <div class="form-row"><div class="form-group"><label>Qtd</label><input type="number" id="cli_qtd" style="width:100%" /></div><div class="form-group"><label>Meta</label><input type="number" id="cli_meta" style="width:100%" /></div></div>
+          <div class="form-row"><div class="form-group"><label>Resp.</label><select id="cli_resp" style="width:100%"></select></div></div>
+          <div class="form-row"><button class="btn primary" id="btnCliSave" style="flex:1">Salvar</button><button class="btn" id="btnCliClear">Limpar</button></div>
         </div>
-
-        <div class="card two">
-          <div class="h">
-            <div>
-              <h2>Clientes</h2>
-              <p class="sub">Lista (abre tela do cliente)</p>
-            </div>
-            <input id="cliSearch" placeholder="Buscar..." style="min-width:240px" />
-          </div>
-
-          <div style="overflow:auto;max-height:620px">
-            <table>
-              <thead>
-                <tr>
-                  <th>Cliente</th>
-                  <th class="right">Limite</th>
-                  <th class="center">Resp.</th>
-                  <th class="right">Ações</th>
-                </tr>
-              </thead>
-              <tbody id="cliTable"></tbody>
-            </table>
+        <div class="col-8 card">
+          <div class="card-title">Carteira</div>
+          <input id="cliSearch" placeholder="Buscar..." style="width:100%; margin-bottom:10px" />
+          <div style="height:400px; overflow-y:auto">
+            <table><thead><tr><th>Nome</th><th>Qtd. Equip</th><th>Prazo</th><th>Opções</th></tr></thead><tbody id="cliTableBody"></tbody></table>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- OS -->
-    <section class="section" id="sec-os">
-      <div class="grid">
-        <div class="card two">
-          <div class="h">
-            <div>
-              <h2>Nova Ordem de Serviço (OS)</h2>
-              <p class="sub">Qtd Programada + Execução parcial por dia (4 hoje, 10 amanhã...)</p>
-            </div>
-            <span class="badge info">Cadastro</span>
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label>Data de abertura</label>
-              <input id="os_data" type="date" />
-            </div>
-            <div class="field">
-              <label>Cliente</label>
-              <select id="os_cliente"></select>
+    <section id="sec-os" class="section">
+      <div class="normal-grid">
+        <div class="col-12 card">
+          <div style="display:flex; justify-content:space-between; margin-bottom:10px">
+            <button class="btn primary" onclick="openOSModal()">+ Nova OS</button>
+            <div style="display:flex; gap:10px">
+              <select id="osFilterStatus"><option value="">Todos</option><option>Aberta</option><option>Parcial</option><option>Fechada</option></select>
+              <input id="osSearch" placeholder="Buscar..." />
             </div>
           </div>
-
-          <div class="row">
-            <div class="field">
-              <label>Tipo</label>
-              <select id="os_tipo">
-                <option>Preventiva</option>
-                <option>Corretiva</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Responsável (Colaborador)</label>
-              <select id="os_colab"></select>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label>Qtd Programada</label>
-              <input id="os_prog" type="number" min="1" value="1" />
-            </div>
-            <div class="field">
-              <label>Observação</label>
-              <input id="os_obs" placeholder="Ex: 50 equipamentos / 2 dias / setor X..." />
-            </div>
-          </div>
-
-          <div class="row">
-            <button class="btn" id="btnOSAdd">Criar OS</button>
-            <button class="btn" id="btnOSClear">Limpar</button>
-          </div>
-
-          <div class="muted" style="margin-top:10px">
-            Depois de criar, abra a OS e lance as execuções diárias.
-          </div>
-        </div>
-
-        <div class="card two">
-          <div class="h">
-            <div>
-              <h2>Ordens de Serviço</h2>
-              <p class="sub">Status automático: Aberta / Parcial / Fechada</p>
-            </div>
-            <div class="row">
-              <input id="osSearch" placeholder="Filtrar..." style="min-width:220px" />
-              <select id="osFiltroStatus" style="min-width:170px">
-                <option value="">Todas</option>
-                <option>Aberta</option>
-                <option>Parcial</option>
-                <option>Fechada</option>
-              </select>
-            </div>
-          </div>
-
-          <div style="overflow:auto;max-height:640px">
-            <table>
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Cliente</th>
-                  <th class="center">Tipo</th>
-                  <th class="center">Status</th>
-                  <th class="center">Prog.</th>
-                  <th class="center">Exec.</th>
-                  <th class="center">Saldo</th>
-                  <th class="center">Resp.</th>
-                  <th class="right">Ações</th>
-                </tr>
-              </thead>
-              <tbody id="osTable"></tbody>
-            </table>
+          <div style="height: calc(100vh - 160px); overflow-y:auto">
+             <table>
+               <thead><tr><th>Data</th><th>Cliente</th><th>Tipo</th><th>Status</th><th>Progresso</th><th>Resp.</th><th class="text-right">Ação</th></tr></thead>
+               <tbody id="osTableBody"></tbody>
+             </table>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- COLABS -->
-    <section class="section" id="sec-colabs">
-      <div class="grid">
-        <div class="card two">
-          <div class="h">
-            <div>
-              <h2>Novo / Editar Colaborador</h2>
-              <p class="sub">Produtividade (Prev/dia e Corr/dia) usada no “Previsto”</p>
-            </div>
-            <span class="badge info" id="colabMode">Modo: Novo</span>
-          </div>
-
+    <section id="sec-colabs" class="section">
+      <div class="normal-grid">
+        <div class="col-4 card">
+          <div class="card-title">Técnico</div>
           <input type="hidden" id="co_id" />
-
-          <div class="row">
-            <div class="field">
-              <label>Nome</label>
-              <input id="co_nome" placeholder="Ex: João / Maria" />
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label>Produtividade Preventiva (qtd/dia)</label>
-              <input id="co_prevDia" type="number" min="0" step="0.1" placeholder="Ex: 6" />
-            </div>
-            <div class="field">
-              <label>Produtividade Corretiva (qtd/dia)</label>
-              <input id="co_corrDia" type="number" min="0" step="0.1" placeholder="Ex: 2" />
-            </div>
-          </div>
-
-          <div class="row">
-            <button class="btn" id="btnCoSave">Salvar</button>
-            <button class="btn" id="btnCoCancel">Cancelar</button>
-          </div>
-
-          <div class="muted" style="margin-top:10px">
-            Dica: se o colaborador faz em média 8 preventivas/dia, coloca 8. O “Previsto” fica bem mais real.
-          </div>
+          <div class="form-group"><label>Nome</label><input id="co_nome" style="width:100%" /></div>
+          <div class="form-row" style="margin-top:10px"><div class="form-group"><label>Prev/dia</label><input id="co_prev" type="number" style="width:100%"/></div><div class="form-group"><label>Corr/dia</label><input id="co_corr" type="number" style="width:100%"/></div></div>
+          <button class="btn primary" id="btnCoSave" style="width:100%; margin-top:10px">Salvar</button>
+          <button class="btn" id="btnCoClear" style="width:100%; margin-top:5px">Cancelar</button>
         </div>
-
-        <div class="card two">
-          <div class="h">
-            <div>
-              <h2>Colaboradores</h2>
-              <p class="sub">Lista</p>
-            </div>
-            <input id="coSearch" placeholder="Buscar..." style="min-width:240px" />
-          </div>
-
-          <div style="overflow:auto;max-height:640px">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th class="center">Prev/dia</th>
-                  <th class="center">Corr/dia</th>
-                  <th class="right">Ações</th>
-                </tr>
-              </thead>
-              <tbody id="coTable"></tbody>
-            </table>
-          </div>
+        <div class="col-8 card">
+          <div class="card-title">Equipe</div>
+          <table><thead><tr><th>Nome</th><th>Meta Prev</th><th>Meta Corr</th><th>Ação</th></tr></thead><tbody id="coTableBody"></tbody></table>
         </div>
       </div>
     </section>
 
-    <!-- BACKUP -->
-    <section class="section" id="sec-backup">
-      <div class="card full">
-        <div class="h">
-          <div>
-            <h2>Backup / Restaurar</h2>
-            <p class="sub">Exporta/importa JSON (pra não perder)</p>
-          </div>
-          <span class="badge warn">Recomendado</span>
-        </div>
-
-        <div class="row">
+    <section id="sec-config" class="section">
+      <div class="card" style="max-width:400px">
+        <div class="card-title">Backup de Dados</div>
+        <div style="display:flex; gap:10px; margin-top:10px">
           <button class="btn" id="btnExport">Exportar JSON</button>
-          <label class="btn" style="cursor:pointer">
-            Importar JSON
-            <input id="fileImport" type="file" accept="application/json" style="display:none" />
-          </label>
-        </div>
-
-        <div class="muted" style="margin-top:10px">
-          Exporta tudo do Firestore. Importar faz “restauração” (sobrescreve itens com mesmo id).
+          <label class="btn danger">Importar JSON<input type="file" id="fileImport" accept=".json" style="display:none"/></label>
         </div>
       </div>
     </section>
+
   </main>
 
-  <!-- TELA DO CLIENTE -->
-  <div class="drawer" id="drawerCli">
-    <div class="panel">
-      <header>
-        <div class="wrap top" style="padding:10px 6px">
-          <div class="brand">
-            <div style="font-size:22px">🏷️</div>
-            <div>
-              <div class="title" id="cliTitle">Cliente</div>
-              <div class="subtitle" id="cliSubtitle">Prazo e Previsto</div>
-            </div>
-          </div>
-          <div class="row">
-            <button class="btn" onclick="closeDrawerCli()">Fechar</button>
-          </div>
+  <div class="drawer-overlay" id="drawerOS">
+    <div class="drawer-panel">
+      <div style="padding:15px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between">
+        <span class="card-title" id="osDrawerTitle">OS Detalhes</span>
+        <button class="btn sm" onclick="closeDrawerOS()">✕</button>
+      </div>
+      <div style="padding:15px; overflow-y:auto; flex:1">
+        <div id="osFormContainer" class="hidden">
+          <input type="hidden" id="os_id" />
+          <div class="form-row"><div class="form-group"><label>Data</label><input type="date" id="os_data" style="width:100%"/></div><div class="form-group"><label>Tipo</label><select id="os_tipo" style="width:100%"><option>Preventiva</option><option>Corretiva</option><option>Instalação</option></select></div></div>
+          <div class="form-group"><label>Cliente</label><select id="os_cliente" style="width:100%"></select></div>
+          <div class="form-row" style="margin-top:10px"><div class="form-group"><label>Técnico</label><select id="os_colab" style="width:100%"></select></div><div class="form-group"><label>Qtd Prog.</label><input type="number" id="os_prog" style="width:100%"/></div></div>
+          <div class="form-group" style="margin-top:10px"><label>Obs</label><textarea id="os_obs" rows="3" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid var(--border); color:white; border-radius:4px"></textarea></div>
+          <div style="margin-top:15px; display:flex; gap:10px"><button class="btn primary" id="btnOSSave" style="flex:1">Salvar</button><button class="btn" onclick="closeDrawerOS()">Cancelar</button></div>
         </div>
-      </header>
-
-      <div class="grid" style="padding:8px">
-        <div class="card two">
-          <div class="h">
-            <div>
-              <h2>Prazo</h2>
-              <p class="sub">Data limite e situação</p>
+        <div id="osExecContainer">
+          <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; margin-bottom:15px">
+             <div style="display:flex; justify-content:space-between; margin-bottom:5px"><span style="font-size:11px; color:var(--text-muted)">Progresso</span><span style="font-weight:700; font-size:12px" id="osExecProgTxt">0/0</span></div>
+             <div style="height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden"><div id="osExecBar" style="height:100%; background:var(--primary); width:0%"></div></div>
+             <div id="osExecObs" style="margin-top:8px; font-size:11px; font-style:italic; color:var(--text-muted)"></div>
+             <button class="btn sm" id="btnEditCurrentOS" style="margin-top:10px; width:100%">Editar Dados</button>
+          </div>
+          <div class="card" style="padding:10px; margin-bottom:15px">
+            <div class="card-title">Lançar Execução</div>
+            <div style="display:flex; gap:10px; align-items:flex-end">
+              <div class="form-group"><label>Data</label><input type="date" id="exec_data" style="width:100%"/></div>
+              <div class="form-group"><label>Qtd</label><input type="number" id="exec_qtd" style="width:100%"/></div>
+              <button class="btn primary" id="btnAddExec">OK</button>
             </div>
           </div>
-          <div id="cliPrazoBox"></div>
-        </div>
-
-        <div class="card two">
-          <div class="h">
-            <div>
-              <h2>Previsto</h2>
-              <p class="sub">Estimativa baseada na produtividade do responsável</p>
-            </div>
-          </div>
-          <div id="cliPrevistoBox"></div>
-        </div>
-
-        <div class="card full">
-          <div class="h">
-            <div>
-              <h2>OS do Cliente</h2>
-              <p class="sub">Lista de Ordens de Serviço</p>
-            </div>
-          </div>
-
-          <div style="overflow:auto;max-height:420px">
-            <table>
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th class="center">Tipo</th>
-                  <th class="center">Status</th>
-                  <th class="center">Prog.</th>
-                  <th class="center">Exec.</th>
-                  <th class="center">Resp.</th>
-                  <th>Obs</th>
-                  <th class="right">Ações</th>
-                </tr>
-              </thead>
-              <tbody id="cliOSTable"></tbody>
-            </table>
-          </div>
+          <table><thead><tr><th>Data</th><th>Qtd</th><th></th></tr></thead><tbody id="execTableBody"></tbody></table>
         </div>
       </div>
     </div>
   </div>
+  <div class="toast-container" id="toastContainer"></div>
 
-  <!-- TELA DA OS -->
-  <div class="drawer" id="drawerOS">
-    <div class="panel">
-      <header>
-        <div class="wrap top" style="padding:10px 6px">
-          <div class="brand">
-            <div style="font-size:22px">🧾</div>
-            <div>
-              <div class="title" id="osTitle">OS</div>
-              <div class="subtitle" id="osSubtitle">Execução parcial por dia</div>
-            </div>
-          </div>
-          <div class="row">
-            <button class="btn" onclick="closeDrawerOS()">Fechar</button>
-          </div>
-        </div>
-      </header>
-
-      <div class="grid" style="padding:8px">
-        <div class="card two">
-          <div class="h">
-            <div>
-              <h2>Resumo</h2>
-              <p class="sub">Status automático + progresso</p>
-            </div>
-          </div>
-          <div id="osResumoBox"></div>
-        </div>
-
-        <div class="card two">
-          <div class="h">
-            <div>
-              <h2>Lançar execução</h2>
-              <p class="sub">Ex: hoje 4, amanhã 10...</p>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label>Data</label>
-              <input id="osExecData" type="date" />
-            </div>
-            <div class="field">
-              <label>Qtd executada</label>
-              <input id="osExecQtd" type="number" min="1" value="1" />
-            </div>
-          </div>
-
-          <div class="row">
-            <button class="btn" id="btnOSExecAdd">Adicionar execução</button>
-            <button class="btn danger" id="btnOSExecUndo">Desfazer última</button>
-          </div>
-
-          <div class="muted" style="margin-top:10px">
-            O sistema não deixa passar da Qtd Programada (pra manter o fechamento certinho).
-          </div>
-        </div>
-
-        <div class="card full">
-          <div class="h">
-            <div>
-              <h2>Execuções</h2>
-              <p class="sub">Histórico por dia</p>
-            </div>
-          </div>
-
-          <div style="overflow:auto;max-height:420px">
-            <table>
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th class="center">Qtd</th>
-                </tr>
-              </thead>
-              <tbody id="osExecTable"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Firebase Firestore (PUBLICO, tempo real) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import {
-      getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
-      onSnapshot, query, where, getDocs, serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    
+    Chart.register(ChartDataLabels);
+    
+    const firebaseConfig = { apiKey: "AIzaSyAK_HgzYUlc7od-gqJOkEAnOedmY4KJ66w", authDomain: "manutencao-suporte.firebaseapp.com", projectId: "manutencao-suporte", storageBucket: "manutencao-suporte.firebasestorage.app", messagingSenderId: "522009429363", appId: "1:522009429363:web:24ecfbf3306d2aa7cf3106" };
+    const app = initializeApp(firebaseConfig); const db = getFirestore(app);
 
-    // ✅ COLE AQUI o config do seu App Web (Firebase Console → Project settings → Your apps → Web)
-    // Ex:
-    // const firebaseConfig = { apiKey:"...", authDomain:"...", projectId:"...", appId:"..." };
-    const firebaseConfig = { apiKey: "AIzaSyAK_HgzYUlc7od-gqJOkEAnOedmY4KJ66w",
-  authDomain: "manutencao-suporte.firebaseapp.com",
-  projectId: "manutencao-suporte",
-  storageBucket: "manutencao-suporte.firebasestorage.app",
-  messagingSenderId: "522009429363",
-  appId: "1:522009429363:web:24ecfbf3306d2aa7cf3106"
-};
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    let state = { clientes: [], os: [], colabs: [], editingOSId: null };
+    let chartLines = null, chartBars = null;
+    const $ = id => document.getElementById(id);
+    const todayISO = () => new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const fmtDate = (iso) => iso ? iso.split("-").reverse().join("/") : "-";
+    const showToast = (msg, type='info') => { const el = document.createElement("div"); el.className = `toast ${type}`; el.innerHTML = `<span>${msg}</span>`; $("toastContainer").appendChild(el); setTimeout(() => el.remove(), 3000); };
 
-    // =============================
-    // Estado (tempo real)
-    // =============================
-    let clientes = [];
-    let osList = [];
-    let colabs = [];
-    let unsub = { clientes:null, os:null, colabs:null };
-
-    // =============================
-    // Helpers
-    // =============================
-    const $ = (id)=> document.getElementById(id);
-
-    function todayISO(){
-      const d = new Date();
-      const off = d.getTimezoneOffset();
-      const local = new Date(d.getTime() - off*60000);
-      return local.toISOString().slice(0,10);
+    // --- RELÓGIO TEMPO REAL ---
+    function startClock() {
+        setInterval(() => {
+            const now = new Date();
+            $('realTimeClock').innerText = now.toLocaleTimeString('pt-BR');
+            $('realTimeDate').innerText = now.toLocaleDateString('pt-BR');
+        }, 1000);
     }
+    startClock();
 
-    function fmtDate(iso){
-      if(!iso) return "";
-      const [y,m,d] = iso.split("-");
-      return `${d}/${m}/${y}`;
-    }
+    // --- LOGIC ---
+    const getStatusOS = (os) => {
+      const ex = (os.exec || []).reduce((a, b) => a + Number(b.qtd), 0);
+      const prog = Number(os.qtdProg || 1);
+      return ex <= 0 ? "Aberta" : (ex >= prog ? "Fechada" : "Parcial");
+    };
 
-    function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+    function renderCharts() {
+      if (!$("chartLine") || !$("chartBar")) return;
+      Chart.defaults.color = '#94a3b8'; Chart.defaults.borderColor = 'rgba(255,255,255,0.05)'; Chart.defaults.font.size = 10;
 
-    function escapeHtml(str){
-      return String(str ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
-    }
-
-    function daysBetween(isoA, isoB){
-      if(!isoA || !isoB) return null;
-      const a = new Date(isoA + "T00:00:00");
-      const b = new Date(isoB + "T00:00:00");
-      return Math.round((b - a) / (1000*60*60*24));
-    }
-
-    function getClienteById(id){ return clientes.find(c=>c.id===id); }
-    function getColabById(id){ return colabs.find(c=>c.id===id); }
-    function getOSById(id){ return osList.find(o=>o.id===id); }
-
-    function metasCliente(cli){
-      const qtdEquip = Number(cli?.qtdEquip || 0);
-      const metaPrevRaw = cli?.metaPrev;
-      const metaPrev = (metaPrevRaw === "" || metaPrevRaw == null) ? 0 : Number(metaPrevRaw);
-      return { metaPrev: (metaPrev > 0 ? metaPrev : (qtdEquip > 0 ? qtdEquip : 0)) };
-    }
-
-    function osExecuted(os){
-      return (os.exec || []).reduce((acc,e)=> acc + Number(e.qtd || 0), 0);
-    }
-
-    function osStatus(os){
-      const prog = Math.max(1, Number(os.qtdProg || 1));
-      const ex = osExecuted(os);
-      if(ex <= 0) return "Aberta";
-      if(ex < prog) return "Parcial";
-      return "Fechada";
-    }
-
-    function osTone(status){
-      if(status==="Fechada") return "ok";
-      if(status==="Parcial") return "warn";
-      return "info";
-    }
-
-    async function ensureClosedAtRemote(os){
-      const st = osStatus(os);
-      let closedAt = os.closedAt || "";
-      if(st === "Fechada" && !closedAt){
-        const last = (os.exec && os.exec.length>0) ? os.exec[os.exec.length-1].data : todayISO();
-        closedAt = last || todayISO();
-      }
-      if(st !== "Fechada") closedAt = "";
-      if(closedAt !== (os.closedAt||"")){
-        await updateDoc(doc(db,"os",os.id), { closedAt });
-      }
-    }
-
-    function statsCliente(clienteId){
-      const items = osList.filter(o => o.clienteId === clienteId);
-
-      const prevExec = items
-        .filter(x=>x.tipo==="Preventiva")
-        .reduce((acc,o)=> acc + osExecuted(o), 0);
-
-      const osAbertas = items.filter(o => osStatus(o) !== "Fechada").length;
-
-      const cli = getClienteById(clienteId);
-      const metas = metasCliente(cli || {});
-      const pPrev = metas.metaPrev > 0 ? clamp01(prevExec / metas.metaPrev) : 0;
-      const faltaPrev = Math.max(0, metas.metaPrev - prevExec);
-
-      let status = {label:"Em andamento", tone:"warn"};
-      if(metas.metaPrev > 0 && prevExec >= metas.metaPrev){
-        status = {label:"Concluído", tone:"ok"};
-      }else if(cli?.dataLimite && todayISO() > cli.dataLimite && faltaPrev > 0){
-        status = {label:"Atrasado", tone:"bad"};
+      const labels = [], dProg = [], dReal = [];
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const iso = d.toISOString().split('T')[0];
+        labels.push(`${d.getDate()}/${d.getMonth()+1}`);
+        let pSum = 0, rSum = 0;
+        state.os.forEach(o => {
+          if (o.data === iso) pSum += Number(o.qtdProg || 0);
+          if (o.exec) o.exec.forEach(e => { if (e.data === iso) rSum += Number(e.qtd || 0); });
+        });
+        dProg.push(pSum); dReal.push(rSum);
       }
 
-      return { prevExec, osAbertas, pPrev, metas, status };
-    }
+      // --- FILTRO: CONTAGEM DE EQUIPAMENTOS PREVENTIVOS ---
+      let totalProg = 0;
+      let totalExec = 0;
 
-    function previstoFim(cli, st){
-      const resp = getColabById(cli?.respId);
-      if(!resp) return {iso:"", detalhe:"Sem responsável"};
-
-      const prevDia = Number(resp.prevDia || 0);
-      const faltaPrev = Math.max(0, (st.metas.metaPrev || 0) - st.prevExec);
-
-      if(faltaPrev === 0) return {iso: todayISO(), detalhe:"Sem pendências"};
-      if(prevDia <= 0) return {iso:"", detalhe:"Produtividade não configurada"};
-
-      const dias = Math.ceil(faltaPrev / prevDia);
-      const base = new Date(todayISO() + "T00:00:00");
-      const end = new Date(base.getTime() + dias * 24*60*60*1000);
-
-      const y = end.getFullYear();
-      const m = String(end.getMonth()+1).padStart(2,"0");
-      const d = String(end.getDate()).padStart(2,"0");
-      const iso = `${y}-${m}-${d}`;
-
-      return {iso, detalhe:`Resp.: ${resp.nome} • Prev/dia ${prevDia}`};
-    }
-
-    // =============================
-    // Realtime (SEM LOGIN)
-    // =============================
-    function stopRealtime(){
-      if(unsub.clientes) unsub.clientes();
-      if(unsub.os) unsub.os();
-      if(unsub.colabs) unsub.colabs();
-      unsub = { clientes:null, os:null, colabs:null };
-      clientes = [];
-      osList = [];
-      colabs = [];
-      renderAll();
-    }
-
-    function iniciarRealtime(){
-      // clientes
-      unsub.clientes = onSnapshot(collection(db,"clientes"), (snap)=>{
-        clientes = snap.docs.map(d=>({ id:d.id, ...d.data() }));
-        renderAll();
+      state.os.filter(o => o.tipo === "Preventiva").forEach(o => {
+         const prog = Number(o.qtdProg || 1);
+         const exec = (o.exec || []).reduce((a, b) => a + Number(b.qtd), 0);
+         totalProg += prog;
+         totalExec += exec;
       });
 
-      // os
-      unsub.os = onSnapshot(collection(db,"os"), (snap)=>{
-        osList = snap.docs.map(d=>({ id:d.id, ...d.data() }));
-        renderAll();
-      });
+      const totalPend = Math.max(0, totalProg - totalExec);
 
-      // colabs
-      unsub.colabs = onSnapshot(collection(db,"colabs"), async (snap)=>{
-        colabs = snap.docs.map(d=>({ id:d.id, ...d.data() }));
-
-        // seed se estiver vazio
-        if(colabs.length===0){
-          await addDoc(collection(db,"colabs"), {
-            nome:"Colaborador 1",
-            prevDia:6,
-            corrDia:2,
-            createdAt: serverTimestamp()
-          });
+      if (chartLines) chartLines.destroy();
+      chartLines = new Chart($('chartLine'), {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Planejado', data: dProg, borderColor: '#3b82f6', tension: 0.3, fill: false }, { label: 'Realizado', data: dReal, borderColor: '#10b981', tension: 0.3, fill: false }] },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { 
+                legend: { position: 'top', labels: {boxWidth: 8} }, 
+                datalabels: { 
+                    display: 'auto',
+                    align: 'top',
+                    color: '#fff',
+                    font: { weight: 'bold' },
+                    formatter: (value) => value > 0 ? value : ''
+                } 
+            }, 
+            scales: { x: { grid: { display: false } } } 
         }
-        renderAll();
+      });
+
+      if (chartBars) chartBars.destroy();
+      chartBars = new Chart($('chartBar'), {
+        type: 'doughnut',
+        data: { 
+            labels: ['Equip. Pendentes', 'Equip. Realizados'], 
+            datasets: [{ 
+                data: [totalPend, totalExec], 
+                backgroundColor: ['#f59e0b', '#10b981'], 
+                borderWidth: 0 
+            }] 
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            cutout: '60%', 
+            plugins: { 
+                legend: { position: 'right', labels: {boxWidth: 8} }, 
+                datalabels: { 
+                    color: 'white',
+                    font: { weight: 'bold' },
+                    formatter: (value) => value > 0 ? value : ''
+                } 
+            } 
+        }
       });
     }
 
-    // =============================
-    // Tabs
-    // =============================
-    document.querySelectorAll(".tab").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
-        btn.classList.add("active");
-        const tab = btn.dataset.tab;
-        document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-        $("sec-"+tab).classList.add("active");
-        renderAll();
+    function renderKPIs() {
+      const totCli = state.clientes.length;
+      let atrasados = 0, totEquip = 0;
+      state.clientes.forEach(c => {
+         totEquip += (Number(c.qtdEquip)||0);
+         const m = Number(c.metaPrev) || Number(c.qtdEquip) || 0;
+         if (m > 0 && c.dataLimite && todayISO() > c.dataLimite) {
+            const feitos = state.os.filter(o => o.clienteId === c.id && o.tipo === 'Preventiva').reduce((a, o) => a + (o.exec || []).reduce((x, y) => x + Number(y.qtd), 0), 0);
+            if (feitos < m) atrasados++;
+         }
       });
-    });
-
-    // =============================
-    // Modo TV + Fullscreen
-    // =============================
-    $("btnTV").addEventListener("click", async ()=>{
-      document.body.classList.toggle("tv");
-      try{
-        if(document.body.classList.contains("tv") && !document.fullscreenElement){
-          await document.documentElement.requestFullscreen();
-        }else if(!document.body.classList.contains("tv") && document.fullscreenElement){
-          await document.exitFullscreen();
-        }
-      }catch(e){}
-      document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
-      document.querySelector('.tab[data-tab="dash"]').classList.add("active");
-      document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-      $("sec-dash").classList.add("active");
-      renderAll();
-    });
-
-    // =============================
-    // KPIs
-    // =============================
-    function renderKPIs(){
-      const totalOS = osList.length;
-
-const abertas = osList.filter(o=>osStatus(o)!=="Fechada").length; // qtd de OS em aberto (registros)
-const parciais = osList.filter(o=>osStatus(o)==="Parcial").length;
-const fechadas = osList.filter(o=>osStatus(o)==="Fechada").length;
-
-// ✅ NOVO: total programado em aberto (saldo)
-const pendenteProg = osList
-  .filter(o=>osStatus(o)!=="Fechada")
-  .reduce((acc, o) => {
-    const prog = Math.max(1, Number(o.qtdProg || 1));
-    const ex = osExecuted(o);
-    const saldo = Math.max(0, prog - ex);
-    return acc + saldo;
-  }, 0);
-
-      const prevExec = osList
-        .filter(o=>o.tipo==="Preventiva")
-        .reduce((acc,o)=> acc + osExecuted(o), 0);
-
-      const atrasados = clientes.filter(cli=>{
-        const st = statsCliente(cli.id);
-        return st && (st.pPrev < 1) && cli.dataLimite && todayISO() > cli.dataLimite;
-      }).length;
+      let pPlan = 0, pReal = 0, cReal = 0;
+      state.os.forEach(o => {
+         const ex = (o.exec || []).reduce((a, b) => a + Number(b.qtd), 0);
+         if (o.tipo === 'Preventiva') { pPlan += Number(o.qtdProg || 0); pReal += ex; }
+         else if (o.tipo === 'Corretiva') cReal += ex;
+      });
 
       const kpis = [
-        {label:"Clientes", val: clientes.length, dot:"info"},
-        {label:"OS (Total)", val: totalOS, dot:"primary"},
-        {label:"OS Pendentes (Prog.)", val: pendenteProg, dot:"info"},
-        {label:"OS Parciais", val: parciais, dot:"warn"},
-        {label:"OS Fechadas", val: fechadas, dot:"ok"},
-        {label:"Exec. Preventiva (qtd)", val: Math.round(prevExec), dot:"ok"},
-        {label:"Clientes Atrasados", val: atrasados, dot:"bad"},
+        { l: "Clientes", v: totCli, c: "var(--info)", i: "domain" },
+        { l: "Atrasados", v: atrasados, c: "var(--danger)", i: "timer_off" },
+        { l: "Equipamentos", v: totEquip, c: "var(--warning)", i: "hvac" },
+        { l: "Prev. Plan", v: pPlan, c: "var(--primary)", i: "event_note" },
+        { l: "Prev. Real", v: pReal, c: "var(--success)", i: "check_circle" },
+        { l: "Corr. Real", v: cReal, c: "var(--purple)", i: "build" }
       ];
-
-      $("kpis").innerHTML = kpis.map(k=>`
-        <div class="kpi">
-          <div>
-            <div class="label">${k.label}</div>
-            <div class="val">${k.val}</div>
-          </div>
-          <div class="dot ${k.dot}"></div>
+      $("kpiContainer").innerHTML = kpis.map(k => `
+        <div class="kpi-box" style="border-left:3px solid ${k.c}">
+          <div><div style="font-size:10px;color:var(--text-muted)">${k.l}</div><div class="kpi-val" style="color:${k.c}">${k.v}</div></div>
+          <span class="material-symbols-rounded" style="color:${k.c}; opacity:0.3; font-size:24px">${k.i}</span>
         </div>
       `).join("");
     }
 
-    // =============================
-    // Dashboard table
-    // =============================
-    $("dashSearch").addEventListener("input", renderDashTable);
+    function renderDashTable() {
+      const q = ($("dashSearch").value || "").toLowerCase();
+      const sortMode = $("dashSort").value;
+      
+      // 1. Filtrar
+      let list = state.clientes.filter(c => c.nome.toLowerCase().includes(q));
 
-    function renderDashTable(){
-      const q = ($("dashSearch").value || "").trim().toLowerCase();
+      // 2. Ordenar
+      list.sort((a,b) => {
+          if (sortMode === 'name') return a.nome.localeCompare(b.nome);
+          
+          if (sortMode === 'equip_desc') {
+              return (Number(b.qtdEquip)||0) - (Number(a.qtdEquip)||0);
+          }
+          
+          if (sortMode === 'equip_asc') {
+              return (Number(a.qtdEquip)||0) - (Number(b.qtdEquip)||0);
+          }
 
-      const rows = clientes
-        .filter(c => !q || (c.nome||"").toLowerCase().includes(q))
-        .sort((a,b)=> (a.nome||"").localeCompare(b.nome||""))
-        .map(cli=>{
-          const st = statsCliente(cli.id);
-          const pctPrev = Math.round(st.pPrev * 100);
+          if (sortMode === 'atraso') {
+              const metaA = Number(a.metaPrev) || Number(a.qtdEquip) || 0;
+              const metaB = Number(b.metaPrev) || Number(b.qtdEquip) || 0;
+              // Logica simplificada: prioriza quem tem data limite vencida
+              const atrasadoA = (a.dataLimite && todayISO() > a.dataLimite) ? 1 : 0;
+              const atrasadoB = (b.dataLimite && todayISO() > b.dataLimite) ? 1 : 0;
+              return atrasadoB - atrasadoA; 
+          }
+          return 0;
+      });
 
-          const prazoDias = cli.dataLimite ? daysBetween(todayISO(), cli.dataLimite) : null;
-          const prazoTxt = (prazoDias==null) ? "—" : (prazoDias >= 0 ? `${prazoDias}d` : `${Math.abs(prazoDias)}d atras.`);
-          const prev = previstoFim(cli, st);
-          const prevTxt = prev.iso ? fmtDate(prev.iso) : "—";
+      const rows = list.map(c => {
+        const meta = Number(c.metaPrev) || Number(c.qtdEquip) || 0;
+        const exec = state.os.filter(o => o.clienteId === c.id && o.tipo === 'Preventiva').reduce((a, o) => a + (o.exec || []).reduce((x, y) => x + Number(y.qtd), 0), 0);
+        const pct = meta > 0 ? Math.min(100, Math.round((exec / meta) * 100)) : 0;
+        
+        let st = `<span class="badge info">Em Dia</span>`;
+        let diasAtrasoHtml = '';
 
-          return `
-            <tr>
-              <td><b>${escapeHtml(cli.nome)}</b></td>
-              <td><span class="badge ${st.status.tone}">${st.status.label}</span></td>
-              <td class="center">
-                <div style="display:flex;justify-content:center">
-                  <div class="bar" title="${pctPrev}%">
-                    <span style="width:${pctPrev}%"></span>
-                    <b>${pctPrev}%</b>
-                  </div>
-                </div>
-              </td>
-              <td class="right">${cli.dataLimite ? fmtDate(cli.dataLimite) : "<span class='muted'>—</span>"}</td>
-              <td class="right">${prazoTxt}</td>
-              <td class="right">${prevTxt}</td>
-              <td class="center">${Math.round(st.prevExec)} / ${st.metas.metaPrev || 0}</td>
-              <td class="center">${st.osAbertas}</td>
-              <td class="right">
-                <button class="btn" onclick="openCliente('${cli.id}')">Ver cliente</button>
-                <button class="btn danger" onclick="delCliente('${cli.id}')">Excluir</button>
-              </td>
-            </tr>
-          `;
-        });
-
-      $("dashTable").innerHTML = rows.join("") || `
-        <tr><td colspan="9" class="muted">Sem clientes.</td></tr>
-      `;
-    }
-
-    // =============================
-    // Clientes CRUD (Firestore)
-    // =============================
-    function setClienteMode(isEdit){
-      $("clienteMode").textContent = "Modo: " + (isEdit ? "Editar" : "Novo");
-      $("clienteMode").className = "badge " + (isEdit ? "warn" : "info");
-    }
-
-    function clearClienteForm(){
-      $("cli_id").value="";
-      $("cli_nome").value="";
-      $("cli_limite").value="";
-      $("cli_qtd").value="";
-      $("cli_meta_prev").value="";
-      $("cli_resp").value = colabs[0]?.id || "";
-      setClienteMode(false);
-    }
-
-    $("btnCliCancel").addEventListener("click", clearClienteForm);
-
-    $("btnCliSave").addEventListener("click", async ()=>{
-      const id = $("cli_id").value.trim();
-      const nome = $("cli_nome").value.trim();
-      if(!nome){ alert("Informe o nome do cliente."); return; }
-
-      const payload = {
-        nome,
-        dataLimite: $("cli_limite").value || "",
-        qtdEquip: $("cli_qtd").value ? Number($("cli_qtd").value) : "",
-        metaPrev: $("cli_meta_prev").value ? Number($("cli_meta_prev").value) : "",
-        respId: $("cli_resp").value || "",
-        updatedAt: serverTimestamp()
-      };
-
-      try{
-        if(id){
-          await updateDoc(doc(db,"clientes",id), payload);
-        }else{
-          await addDoc(collection(db,"clientes"), { ...payload, createdAt: serverTimestamp() });
+        if (meta > 0 && exec >= meta) {
+            st = `<span class="badge success">Concluído</span>`;
+        } else if (c.dataLimite && todayISO() > c.dataLimite) {
+            st = `<span class="badge danger piscar">Atrasado</span>`;
+            const d1 = new Date(todayISO()); const d2 = new Date(c.dataLimite);
+            const diffDays = Math.ceil(Math.abs(d1 - d2) / (1000 * 60 * 60 * 24)); 
+            diasAtrasoHtml = `<br><div class="late-tag">⚠️ +${diffDays} dias</div>`;
         }
-        clearClienteForm();
-      }catch(e){
-        alert("Falha ao salvar cliente.");
-      }
-    });
 
-    $("cliSearch").addEventListener("input", renderClientesTable);
-
-    function renderClientesTable(){
-      const q = ($("cliSearch").value || "").trim().toLowerCase();
-
-      const rows = clientes
-        .filter(c => !q || (c.nome||"").toLowerCase().includes(q))
-        .sort((a,b)=> (a.nome||"").localeCompare(b.nome||""))
-        .map(cli=>{
-          const resp = getColabById(cli.respId);
-          return `
-            <tr>
-              <td><b>${escapeHtml(cli.nome)}</b></td>
-              <td class="right">${cli.dataLimite ? fmtDate(cli.dataLimite) : "<span class='muted'>—</span>"}</td>
-              <td class="center">${resp ? escapeHtml(resp.nome) : "<span class='muted'>—</span>"}</td>
-              <td class="right">
-                <button class="btn" onclick="editCliente('${cli.id}')">Editar</button>
-                <button class="btn" onclick="openCliente('${cli.id}')">Ver</button>
-                <button class="btn danger" onclick="delCliente('${cli.id}')">Excluir</button>
-              </td>
-            </tr>
-          `;
-        });
-
-      $("cliTable").innerHTML = rows.join("") || `
-        <tr><td colspan="4" class="muted">Sem clientes.</td></tr>
-      `;
-    }
-
-    window.editCliente = (id)=>{
-      const cli = getClienteById(id);
-      if(!cli) return;
-      $("cli_id").value = cli.id;
-      $("cli_nome").value = cli.nome || "";
-      $("cli_limite").value = cli.dataLimite || "";
-      $("cli_qtd").value = cli.qtdEquip ?? "";
-      $("cli_meta_prev").value = (cli.metaPrev ?? "") === "" ? "" : cli.metaPrev;
-      $("cli_resp").value = cli.respId || (colabs[0]?.id || "");
-      setClienteMode(true);
-    };
-
-    window.delCliente = async (id)=>{
-      const cli = getClienteById(id);
-      if(!cli) return;
-      const ok = confirm(`Excluir "${cli.nome}"? Isso apaga as OS desse cliente.`);
-      if(!ok) return;
-
-      try{
-        // apaga OS do cliente
-        const qOS = query(collection(db,"os"), where("clienteId","==",id));
-        const snap = await getDocs(qOS);
-        for(const d of snap.docs){
-          await deleteDoc(doc(db,"os",d.id));
-        }
-        // apaga cliente
-        await deleteDoc(doc(db,"clientes",id));
-      }catch(e){
-        alert("Falha ao excluir cliente.");
-      }
-    };
-
-    // =============================
-    // OS: cadastro + lista (Firestore)
-    // =============================
-    function renderOSClienteSelect(){
-      const sel = $("os_cliente");
-      sel.innerHTML = clientes
-        .slice()
-        .sort((a,b)=>(a.nome||"").localeCompare(b.nome||""))
-        .map(c=> `<option value="${c.id}">${escapeHtml(c.nome)}</option>`)
-        .join("") || `<option value="">(Cadastre um cliente)</option>`;
-    }
-
-    function renderOSColabSelect(){
-      const sel = $("os_colab");
-      sel.innerHTML = colabs
-        .slice()
-        .sort((a,b)=>(a.nome||"").localeCompare(b.nome||""))
-        .map(c=> `<option value="${c.id}">${escapeHtml(c.nome)}</option>`)
-        .join("");
-    }
-
-    function clearOSForm(){
-      $("os_data").value = todayISO();
-      $("os_tipo").value = "Preventiva";
-      $("os_prog").value = 1;
-      $("os_obs").value = "";
-      if(clientes[0]) $("os_cliente").value = clientes[0].id;
-      if(colabs[0]) $("os_colab").value = colabs[0].id;
-    }
-
-    $("btnOSClear").addEventListener("click", clearOSForm);
-
-    $("btnOSAdd").addEventListener("click", async ()=>{
-      if(clientes.length===0){ alert("Cadastre um cliente primeiro."); return; }
-
-      const clienteId = $("os_cliente").value;
-      const data = $("os_data").value || todayISO();
-      const tipo = $("os_tipo").value;
-      const colabId = $("os_colab").value || "";
-      const qtdProg = Math.max(1, Number($("os_prog").value || 1));
-      const obs = $("os_obs").value || "";
-
-      if(!clienteId){ alert("Selecione um cliente."); return; }
-
-      try{
-        await addDoc(collection(db,"os"), {
-          data, clienteId, tipo, colabId, qtdProg, obs,
-          exec: [],
-          closedAt: "",
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
-        clearOSForm();
-      }catch(e){
-        alert("Falha ao criar OS.");
-      }
-    });
-
-    $("osSearch").addEventListener("input", renderOSTable);
-    $("osFiltroStatus").addEventListener("change", renderOSTable);
-
-    function renderOSTable(){
-      const q = ($("osSearch").value || "").trim().toLowerCase();
-      const fs = $("osFiltroStatus").value;
-
-      const rows = osList
-        .slice()
-        .sort((a,b)=> (b.data || "").localeCompare(a.data || ""))
-        .filter(o=>{
-          const cli = getClienteById(o.clienteId);
-          const col = getColabById(o.colabId);
-          const st = osStatus(o);
-          if(fs && st !== fs) return false;
-
-          const hay = `${cli?.nome||""} ${col?.nome||""} ${o.obs||""} ${o.tipo||""}`.toLowerCase();
-          return !q || hay.includes(q);
-        })
-        .map(o=>{
-          const cli = getClienteById(o.clienteId);
-          const col = getColabById(o.colabId);
-          const st = osStatus(o);
-          const tone = osTone(st);
-          const prog = Math.max(1, Number(o.qtdProg||1));
-          const ex = osExecuted(o);
-          const saldo = Math.max(0, prog - ex);
-
-          return `
-            <tr>
-              <td>${o.data ? fmtDate(o.data) : ""}</td>
-              <td><b>${escapeHtml(cli?.nome || "(removido)")}</b></td>
-              <td class="center"><span class="badge info">${escapeHtml(o.tipo)}</span></td>
-              <td class="center"><span class="badge ${tone}">${st}</span></td>
-              <td class="center">${prog}</td>
-              <td class="center">${ex}</td>
-              <td class="center">${saldo}</td>
-              <td class="center">${col ? escapeHtml(col.nome) : "<span class='muted'>—</span>"}</td>
-              <td class="right">
-                <button class="btn" onclick="openOS('${o.id}')">Abrir</button>
-                <button class="btn danger" onclick="delOS('${o.id}')">Excluir</button>
-              </td>
-            </tr>
-          `;
-        });
-
-      $("osTable").innerHTML = rows.join("") || `
-        <tr><td colspan="9" class="muted">Sem OS.</td></tr>
-      `;
-    }
-
-    window.delOS = async (id)=>{
-      const o = getOSById(id);
-      if(!o) return;
-      const ok = confirm("Excluir esta OS?");
-      if(!ok) return;
-      try{
-        await deleteDoc(doc(db,"os",id));
-      }catch(e){
-        alert("Falha ao excluir OS.");
-      }
-    };
-
-    // =============================
-    // Colaboradores CRUD (Firestore)
-    // =============================
-    function setColabMode(isEdit){
-      $("colabMode").textContent = "Modo: " + (isEdit ? "Editar" : "Novo");
-      $("colabMode").className = "badge " + (isEdit ? "warn" : "info");
-    }
-
-    function clearColabForm(){
-      $("co_id").value="";
-      $("co_nome").value="";
-      $("co_prevDia").value="";
-      $("co_corrDia").value="";
-      setColabMode(false);
-    }
-
-    $("btnCoCancel").addEventListener("click", clearColabForm);
-
-    $("btnCoSave").addEventListener("click", async ()=>{
-      const id = $("co_id").value.trim();
-      const nome = $("co_nome").value.trim();
-      if(!nome){ alert("Informe o nome."); return; }
-
-      const payload = {
-        nome,
-        prevDia: $("co_prevDia").value ? Number($("co_prevDia").value) : 0,
-        corrDia: $("co_corrDia").value ? Number($("co_corrDia").value) : 0,
-        updatedAt: serverTimestamp()
-      };
-
-      try{
-        if(id){
-          await updateDoc(doc(db,"colabs",id), payload);
-        }else{
-          await addDoc(collection(db,"colabs"), { ...payload, createdAt: serverTimestamp() });
-        }
-        clearColabForm();
-      }catch(e){
-        alert("Falha ao salvar colaborador.");
-      }
-    });
-
-    $("coSearch").addEventListener("input", renderColabsTable);
-
-    function renderColabsTable(){
-      const q = ($("coSearch").value || "").trim().toLowerCase();
-
-      const rows = colabs
-        .filter(c => !q || (c.nome||"").toLowerCase().includes(q))
-        .sort((a,b)=> (a.nome||"").localeCompare(b.nome||""))
-        .map(c=>`
+        return `
           <tr>
-            <td><b>${escapeHtml(c.nome)}</b></td>
-            <td class="center">${Number(c.prevDia||0)}</td>
-            <td class="center">${Number(c.corrDia||0)}</td>
-            <td class="right">
-              <button class="btn" onclick="editColab('${c.id}')">Editar</button>
-              <button class="btn danger" onclick="delColab('${c.id}')">Excluir</button>
+            <td style="font-weight:700">
+                ${c.nome}
+                <div style="font-size:10px; font-weight:400; color:var(--text-muted)">${Number(c.qtdEquip)||0} Equip.</div>
             </td>
+            <td style="text-align:center">${st}</td>
+            <td style="text-align:center">
+              <div style="display:flex; align-items:center; gap:5px; justify-content:center">
+                <div style="flex:1; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; max-width:100px"><div style="width:${pct}%; background:var(--primary); height:100%"></div></div>
+                <span style="font-size:10px">${exec}/${meta}</span>
+              </div>
+            </td>
+            <td style="text-align:right">
+                ${fmtDate(c.dataLimite)}
+                ${diasAtrasoHtml}
+            </td>
+            <td style="text-align:right"><button class="btn sm" onclick="window.detalhe('${c.id}')">Ver</button></td>
           </tr>
-        `);
-
-      $("coTable").innerHTML = rows.join("") || `
-        <tr><td colspan="4" class="muted">Sem colaboradores.</td></tr>
-      `;
+        `;
+      });
+      $("dashTableBody").innerHTML = rows.join("");
     }
 
-    window.editColab = (id)=>{
-      const c = getColabById(id);
-      if(!c) return;
-      $("co_id").value = c.id;
-      $("co_nome").value = c.nome || "";
-      $("co_prevDia").value = Number(c.prevDia || 0);
-      $("co_corrDia").value = Number(c.corrDia || 0);
-      setColabMode(true);
-    };
-
-    window.delColab = async (id)=>{
-      const c = getColabById(id);
-      if(!c) return;
-      const ok = confirm(`Excluir "${c.nome}"?`);
-      if(!ok) return;
-
-      try{
-        // desvincula nos clientes
-        for(const cli of clientes.filter(x=>x.respId===id)){
-          await updateDoc(doc(db,"clientes",cli.id), { respId:"", updatedAt: serverTimestamp() });
-        }
-        // desvincula nas OS
-        for(const o of osList.filter(x=>x.colabId===id)){
-          await updateDoc(doc(db,"os",o.id), { colabId:"", updatedAt: serverTimestamp() });
-        }
-        // apaga colaborador
-        await deleteDoc(doc(db,"colabs",id));
-      }catch(e){
-        alert("Falha ao excluir colaborador.");
-      }
-    };
-
-    function renderClienteRespSelect(){
-      const sel = $("cli_resp");
-      sel.innerHTML =
-        `<option value="">(sem responsável)</option>` +
-        colabs
-          .slice()
-          .sort((a,b)=>(a.nome||"").localeCompare(b.nome||""))
-          .map(c=> `<option value="${c.id}">${escapeHtml(c.nome)}</option>`)
-          .join("");
-    }
-
-    // =============================
-    // Backup / Restaurar (Firestore)
-    // =============================
-    $("btnExport").addEventListener("click", async ()=>{
-      try{
-        const payload = { version: 3, exportedAt: new Date().toISOString(), clientes, colabs, osList };
-        const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "backup_manutencao_firestore.json";
-        a.click();
-        URL.revokeObjectURL(url);
-      }catch(e){
-        alert("Falha ao exportar.");
-      }
+    // --- SETUP ---
+    document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+      document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+      document.querySelectorAll(".section").forEach(x => x.classList.remove("active"));
+      t.classList.add("active"); $("sec-" + t.dataset.tab).classList.add("active");
     });
+    
+    // Listeners Search & Sort
+    $("dashSearch").oninput = renderDashTable;
+    $("dashSort").onchange = renderDashTable; // Trigger de ordenação
 
-    $("fileImport").addEventListener("change", async (ev)=>{
-      const f = ev.target.files?.[0];
-      if(!f) return;
-      try{
-        const obj = JSON.parse(await f.text());
-        if(!obj || !Array.isArray(obj.clientes) || !Array.isArray(obj.colabs) || !Array.isArray(obj.osList)){
-          alert("JSON inválido (esperava clientes/colabs/osList).");
-          return;
-        }
-        // restaura (sobrescreve por id)
-        for(const c of obj.clientes){
-          if(!c.id) continue;
-          const {id, ...data} = c;
-          await setDoc(doc(db,"clientes",id), { ...data, updatedAt: serverTimestamp() }, {merge:true});
-        }
-        for(const u of obj.colabs){
-          if(!u.id) continue;
-          const {id, ...data} = u;
-          await setDoc(doc(db,"colabs",id), { ...data, updatedAt: serverTimestamp() }, {merge:true});
-        }
-        for(const o of obj.osList){
-          if(!o.id) continue;
-          const {id, ...data} = o;
-          await setDoc(doc(db,"os",id), { ...data, updatedAt: serverTimestamp() }, {merge:true});
-        }
-        alert("Importado com sucesso!");
-      }catch(e){
-        alert("Falha ao importar JSON.");
-      }finally{
-        ev.target.value = "";
-      }
-    });
-
-    // =============================
-    // Charts
-    // =============================
-    function drawLineChart(canvas, labels, seriesA, seriesB){
-      const ctx = canvas.getContext("2d");
-      const W = canvas.width, H = canvas.height;
-      ctx.clearRect(0,0,W,H);
-
-      const padL=50, padR=18, padT=16, padB=34;
-      const plotW = W - padL - padR;
-      const plotH = H - padT - padB;
-
-      const maxV = Math.max(1, ...seriesA, ...seriesB);
-
-      ctx.strokeStyle = "rgba(255,255,255,.10)";
-      ctx.lineWidth = 1;
-      const lines = 4;
-      for(let i=0;i<=lines;i++){
-        const y = padT + plotH * (i/lines);
-        ctx.beginPath();
-        ctx.moveTo(padL, y);
-        ctx.lineTo(W-padR, y);
-        ctx.stroke();
-      }
-
-      ctx.fillStyle = "rgba(255,255,255,.65)";
-      ctx.font = "12px ui-sans-serif, system-ui";
-      ctx.textAlign = "right";
-      ctx.textBaseline = "middle";
-      for(let i=0;i<=lines;i++){
-        const v = Math.round(maxV * (1 - i/lines));
-        const y = padT + plotH * (i/lines);
-        ctx.fillText(String(v), padL-8, y);
-      }
-
-      ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      const step = Math.max(1, Math.floor(labels.length/7));
-      for(let i=0;i<labels.length;i+=step){
-        const x = padL + plotW * (i/(labels.length-1 || 1));
-        ctx.fillText(labels[i], x, padT+plotH+8);
-      }
-
-      function yOf(v){ return padT + plotH * (1 - v/maxV); }
-      function xOf(i){ return padL + plotW * (i/(labels.length-1 || 1)); }
-
-      ctx.strokeStyle = "rgba(251,191,36,.95)";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      seriesA.forEach((v,i)=>{
-        const x=xOf(i), y=yOf(v);
-        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-      });
-      ctx.stroke();
-
-      ctx.strokeStyle = "rgba(52,211,153,.95)";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      seriesB.forEach((v,i)=>{
-        const x=xOf(i), y=yOf(v);
-        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-      });
-      ctx.stroke();
-
-      ctx.font = "13px ui-sans-serif, system-ui";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = "rgba(251,191,36,.95)";
-      ctx.fillText("● OS abertas", padL, 12);
-      ctx.fillStyle = "rgba(52,211,153,.95)";
-      ctx.fillText("● OS fechadas", padL + 140, 12);
-    }
-
-    function drawBarChart(canvas, labels, values){
-      const ctx = canvas.getContext("2d");
-      const W = canvas.width, H = canvas.height;
-      ctx.clearRect(0,0,W,H);
-
-      const padL=50, padR=18, padT=16, padB=46;
-      const plotW = W - padL - padR;
-      const plotH = H - padT - padB;
-
-      const maxV = Math.max(1, ...values);
-
-      ctx.strokeStyle = "rgba(255,255,255,.10)";
-      ctx.lineWidth = 1;
-      const lines = 4;
-      for(let i=0;i<=lines;i++){
-        const y = padT + plotH * (i/lines);
-        ctx.beginPath();
-        ctx.moveTo(padL, y);
-        ctx.lineTo(W-padR, y);
-        ctx.stroke();
-      }
-
-      ctx.fillStyle = "rgba(255,255,255,.65)";
-      ctx.font = "12px ui-sans-serif, system-ui";
-      ctx.textAlign = "right";
-      ctx.textBaseline = "middle";
-      for(let i=0;i<=lines;i++){
-        const v = Math.round(maxV * (1 - i/lines));
-        const y = padT + plotH * (i/lines);
-        ctx.fillText(String(v), padL-8, y);
-      }
-
-      const n = labels.length;
-      const gap = 14;
-      const barW = (plotW - gap*(n-1)) / n;
-
-      labels.forEach((lab,i)=>{
-        const v = values[i];
-        const h = plotH * (v/maxV);
-        const x = padL + i*(barW+gap);
-        const y = padT + (plotH - h);
-
-        const grad = ctx.createLinearGradient(x, y, x, y+h);
-        grad.addColorStop(0, "rgba(96,165,250,.95)");
-        grad.addColorStop(1, "rgba(34,211,238,.35)");
-
-        ctx.fillStyle = grad;
-        ctx.fillRect(x, y, barW, h);
-
-        ctx.fillStyle = "rgba(255,255,255,.75)";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-        ctx.font = "12px ui-sans-serif, system-ui";
-        ctx.fillText(lab, x + barW/2, padT + plotH + 10);
-
-        ctx.fillStyle = "rgba(255,255,255,.92)";
-        ctx.textBaseline = "bottom";
-        ctx.font = "13px ui-sans-serif, system-ui";
-        ctx.fillText(String(v), x + barW/2, y - 6);
-      });
-    }
-
-    function renderCharts(){
-      const days = 14;
-      const labels = [];
-      const abertasDia = [];
-      const fechadasDia = [];
-      const base = new Date(todayISO()+"T00:00:00");
-
-      for(let i=days-1;i>=0;i--){
-        const d = new Date(base.getTime() - i*24*60*60*1000);
-        const y = d.getFullYear();
-        const m = String(d.getMonth()+1).padStart(2,"0");
-        const dd = String(d.getDate()).padStart(2,"0");
-        const iso = `${y}-${m}-${dd}`;
-
-        labels.push(`${dd}/${m}`);
-        abertasDia.push(osList.filter(o => (o.data || "") === iso).length);
-        fechadasDia.push(osList.filter(o => (o.closedAt || "") === iso).length);
-      }
-
-      drawLineChart($("chartLinha"), labels, abertasDia, fechadasDia);
-
-      const totalAbertas = osList.filter(o=>osStatus(o)!=="Fechada").length;
-      const totalFechadas = osList.filter(o=>osStatus(o)==="Fechada").length;
-      const prevExec = osList.filter(o=>o.tipo==="Preventiva").reduce((acc,o)=> acc + osExecuted(o), 0);
-      const atrasados = clientes.filter(cli=>{
-        const st = statsCliente(cli.id);
-        return cli.dataLimite && todayISO() > cli.dataLimite && st.pPrev < 1;
-      }).length;
-
-      drawBarChart($("chartBarras"),
-        ["OS Abertas","OS Fechadas","Prev Exec.","Atrasados"],
-        [totalAbertas,totalFechadas,Math.round(prevExec),atrasados]
-      );
-    }
-
-    // =============================
-    // Tela do Cliente (só barra preventiva)
-    // =============================
-    window.openCliente = (id)=>{
-      const cli = getClienteById(id);
-      if(!cli) return;
-
-      const st = statsCliente(id);
-      const prev = previstoFim(cli, st);
-
-      $("cliTitle").textContent = cli.nome || "Cliente";
-      const resp = getColabById(cli.respId);
-      $("cliSubtitle").textContent = `Resp.: ${resp ? resp.nome : "—"} • Meta Prev: ${st.metas.metaPrev || 0}`;
-
-      const dias = cli.dataLimite ? daysBetween(todayISO(), cli.dataLimite) : null;
-      const prazoBadge = (dias==null) ? "info" : (dias>=0 ? "ok" : "bad");
-      const prazoTxt = (dias==null) ? "Sem data limite" : (dias>=0 ? `Faltam ${dias} dias` : `Atrasado ${Math.abs(dias)} dias`);
-
-      $("cliPrazoBox").innerHTML = `
-        <div class="row">
-          <span class="badge ${prazoBadge}">Prazo: ${cli.dataLimite ? fmtDate(cli.dataLimite) : "—"}</span>
-          <span class="badge ${prazoBadge}">${prazoTxt}</span>
-        </div>
-        <div style="margin-top:10px" class="muted">
-          O status “Atrasado” considera o prazo e se ainda falta preventiva (meta).
-        </div>
-      `;
-
-      const prevBadge = prev.iso ? "info" : "warn";
-      $("cliPrevistoBox").innerHTML = `
-        <div class="row">
-          <span class="badge ${prevBadge}">Previsto fim: ${prev.iso ? fmtDate(prev.iso) : "—"}</span>
-          <span class="badge info">${escapeHtml(prev.detalhe)}</span>
-        </div>
-        <div style="margin-top:12px" class="row">
-          <div class="field">
-            <label>Preventivas</label>
-            <div class="bar">
-              <span style="width:${Math.round(st.pPrev*100)}%"></span>
-              <b>${Math.round(st.pPrev*100)}%</b>
-            </div>
-            <div class="muted" style="margin-top:6px">${Math.round(st.prevExec)} / ${st.metas.metaPrev || 0}</div>
-          </div>
-        </div>
-      `;
-
-      const rows = osList
-        .filter(o=>o.clienteId===id)
-        .slice()
-        .sort((a,b)=> (b.data||"").localeCompare(a.data||""))
-        .map(o=>{
-          const col = getColabById(o.colabId);
-          const stOS = osStatus(o);
-          const tone = osTone(stOS);
-          const prog = Math.max(1, Number(o.qtdProg||1));
-          const ex = osExecuted(o);
-
-          return `
-            <tr>
-              <td>${o.data ? fmtDate(o.data) : ""}</td>
-              <td class="center"><span class="badge info">${escapeHtml(o.tipo)}</span></td>
-              <td class="center"><span class="badge ${tone}">${stOS}</span></td>
-              <td class="center">${prog}</td>
-              <td class="center">${ex}</td>
-              <td class="center">${col ? escapeHtml(col.nome) : "<span class='muted'>—</span>"}</td>
-              <td>${escapeHtml(o.obs||"")}</td>
-              <td class="right"><button class="btn" onclick="openOS('${o.id}')">Abrir</button></td>
-            </tr>
-          `;
+    $("cliSearch").oninput = () => {
+       const q = $("cliSearch").value.toLowerCase();
+       $("cliTableBody").innerHTML = state.clientes.filter(c=>c.nome.toLowerCase().includes(q)).map(c=>`<tr><td>${c.nome}</td><td>${Number(c.qtdEquip)||0}</td><td>${fmtDate(c.dataLimite)}</td><td><button class="btn sm" onclick="window.editCli('${c.id}')">Ed</button> <button class="btn sm danger" onclick="window.delCli('${c.id}')">Ex</button></td></tr>`).join("");
+    };
+    $("osSearch").oninput = renderOSTable;
+    
+    function renderOSTable(){
+        const q=$("osSearch").value.toLowerCase(); const fs=$("osFilterStatus").value;
+        $("osTableBody").innerHTML = state.os.filter(o => {
+            const cn = state.clientes.find(c=>c.id===o.clienteId)?.nome||"";
+            return (cn.toLowerCase().includes(q)|| (o.obs||"").toLowerCase().includes(q)) && (!fs || getStatusOS(o)===fs);
+        }).sort((a,b)=>b.data.localeCompare(a.data)).map(o=>{
+            const c=state.clientes.find(x=>x.id===o.clienteId); const r=state.colabs.find(x=>x.id===o.colabId); const st=getStatusOS(o);
+            const badge = st==="Fechada"?"success":st==="Parcial"?"warning":"info";
+            const ex=(o.exec||[]).reduce((a,b)=>a+Number(b.qtd),0); const tot=o.qtdProg||1;
+            return `<tr><td>${fmtDate(o.data)}</td><td>${c?c.nome:"?"}</td><td>${o.tipo}</td><td><span class="badge ${badge}">${st}</span></td><td>${ex}/${tot}</td><td>${r?r.nome:"-"}</td><td class="text-right"><button class="btn sm" onclick="window.openOS('${o.id}')">Abrir</button></td></tr>`;
         }).join("");
-
-      $("cliOSTable").innerHTML = rows || `<tr><td colspan="8" class="muted">Sem OS.</td></tr>`;
-      $("drawerCli").classList.add("open");
-    };
-
-    window.closeDrawerCli = ()=> $("drawerCli").classList.remove("open");
-
-    // =============================
-    // Tela da OS (execução parcial)
-    // =============================
-    let currentOSId = "";
-
-    window.openOS = (id)=>{
-      const o = getOSById(id);
-      if(!o) return;
-
-      currentOSId = id;
-
-      const cli = getClienteById(o.clienteId);
-      const col = getColabById(o.colabId);
-      const st = osStatus(o);
-      const tone = osTone(st);
-
-      const prog = Math.max(1, Number(o.qtdProg||1));
-      const ex = osExecuted(o);
-      const saldo = Math.max(0, prog - ex);
-      const pct = Math.round((ex / prog) * 100);
-
-      $("osTitle").textContent = `OS • ${cli ? cli.nome : "(cliente removido)"}`;
-      $("osSubtitle").textContent = `Tipo: ${o.tipo} • Resp.: ${col ? col.nome : "—"} • Status: ${st}`;
-
-      $("osExecData").value = todayISO();
-      $("osExecQtd").value = 1;
-
-      $("osResumoBox").innerHTML = `
-        <div class="row">
-          <span class="badge ${tone}">Status: ${st}</span>
-          <span class="badge info">Programada: ${prog}</span>
-          <span class="badge info">Executada: ${ex}</span>
-          <span class="badge warn">Saldo: ${saldo}</span>
-          <span class="badge ok">Progresso: ${pct}%</span>
-        </div>
-        <div style="margin-top:12px">
-          <div class="bar" style="width:100%">
-            <span style="width:${pct}%"></span>
-            <b>${pct}%</b>
-          </div>
-        </div>
-        <div class="muted" style="margin-top:10px">Obs: ${escapeHtml(o.obs || "—")}</div>
-      `;
-
-      renderOSExecTable(o);
-      $("drawerOS").classList.add("open");
-    };
-
-    window.closeDrawerOS = ()=>{
-      $("drawerOS").classList.remove("open");
-      currentOSId = "";
-    };
-
-    function renderOSExecTable(o){
-      const rows = (o.exec || [])
-        .slice()
-        .sort((a,b)=> (b.data||"").localeCompare(a.data||""))
-        .map(e=>`
-          <tr>
-            <td>${e.data ? fmtDate(e.data) : ""}</td>
-            <td class="center">${Number(e.qtd||0)}</td>
-          </tr>
-        `).join("");
-
-      $("osExecTable").innerHTML = rows || `<tr><td colspan="2" class="muted">Sem execuções ainda.</td></tr>`;
     }
 
-    $("btnOSExecAdd").addEventListener("click", async ()=>{
-      if(!currentOSId) return;
-      const o = getOSById(currentOSId);
-      if(!o) return;
+    // --- ACTIONS ---
+    window.detalhe = (id) => { $("tab-os").click(); document.querySelector('[data-tab="os"]').click(); setTimeout(()=>{ const c=state.clientes.find(x=>x.id===id); if(c){ $("osSearch").value=c.nome; renderOSTable();} },100); };
+    
+    // CRUD CLIENTE
+    window.editCli=(id)=>{ const c=state.clientes.find(x=>x.id===id); $("cli_id").value=c.id; $("cli_nome").value=c.nome; $("cli_limite").value=c.dataLimite; $("cli_qtd").value=c.qtdEquip; $("cli_meta").value=c.metaPrev||""; $("cli_resp").value=c.respId; };
+    window.delCli=async(id)=>{ if(confirm("Apagar?")) { await deleteDoc(doc(db,"clientes",id)); showToast("Removido"); }};
+    $("btnCliSave").onclick=async()=>{ const id=$("cli_id").value; const d={nome:$("cli_nome").value, dataLimite:$("cli_limite").value, qtdEquip:Number($("cli_qtd").value), metaPrev:$("cli_meta").value, respId:$("cli_resp").value, updatedAt:serverTimestamp()}; if(!d.nome)return; if(id) await updateDoc(doc(db,"clientes",id),d); else await addDoc(collection(db,"clientes"),d); showToast("Salvo"); $("btnCliClear").click(); };
+    $("btnCliClear").onclick=()=>{ $("cli_id").value=""; $("cli_nome").value=""; $("cli_limite").value=""; $("cli_qtd").value=""; $("cli_meta").value=""; };
 
-      const data = $("osExecData").value || todayISO();
-      let qtd = Math.max(1, Number($("osExecQtd").value || 1));
+    // CRUD COLAB
+    window.editCo=(id)=>{ const c=state.colabs.find(x=>x.id===id); $("co_id").value=c.id; $("co_nome").value=c.nome; $("co_prev").value=c.prevDia; $("co_corr").value=c.corrDia; };
+    $("btnCoClear").onclick=()=>{ $("co_id").value=""; $("co_nome").value=""; $("co_prev").value=""; $("co_corr").value=""; };
+    $("btnCoSave").onclick=async()=>{ const id=$("co_id").value; const d={nome:$("co_nome").value, prevDia:Number($("co_prev").value), corrDia:Number($("co_corr").value)}; if(!d.nome)return; if(id) await updateDoc(doc(db,"colabs",id),d); else await addDoc(collection(db,"colabs"),d); showToast("Salvo"); $("btnCoClear").click(); };
 
-      const prog = Math.max(1, Number(o.qtdProg||1));
-      const ex = osExecuted(o);
-      const sobra = Math.max(0, prog - ex);
+    // CRUD OS
+    window.openOSModal=()=>{ $("os_id").value=""; $("os_data").value=todayISO(); $("os_prog").value=1; $("os_obs").value=""; $("osFormContainer").classList.remove("hidden"); $("osExecContainer").classList.add("hidden"); $("osDrawerTitle").innerText="Nova OS"; $("drawerOS").classList.add("open"); };
+    window.openOS=(id)=>{ const os=state.os.find(o=>o.id===id); if(!os)return; state.editingOSId=id; renderOSExec(os); $("osFormContainer").classList.add("hidden"); $("osExecContainer").classList.remove("hidden"); $("osDrawerTitle").innerText=`OS #${id.slice(0,4)}`; $("drawerOS").classList.add("open"); };
+    function renderOSExec(os){ const t=Number(os.qtdProg||1); const ex=(os.exec||[]).reduce((a,b)=>a+Number(b.qtd),0); const p=Math.min(100,Math.round((ex/t)*100)); $("osExecProgTxt").innerText=`${ex}/${t} (${p}%)`; $("osExecBar").style.width=p+"%"; $("osExecObs").innerText=os.obs||""; $("exec_data").value=todayISO(); $("exec_qtd").value=1; $("execTableBody").innerHTML=(os.exec||[]).map((e,i)=>`<tr><td>${fmtDate(e.data)}</td><td>${e.qtd}</td><td><button class="btn sm danger" onclick="window.rmOSItem('${os.id}',${i})">x</button></td></tr>`).join(""); }
+    $("btnOSSave").onclick=async()=>{ const id=$("os_id").value; const d={data:$("os_data").value, tipo:$("os_tipo").value, clienteId:$("os_cliente").value, colabId:$("os_colab").value, qtdProg:Number($("os_prog").value), obs:$("os_obs").value}; if(id) await updateDoc(doc(db,"os",id),d); else await addDoc(collection(db,"os"),{...d, exec:[], createdAt:serverTimestamp()}); showToast("Salvo"); window.closeDrawerOS(); };
+    $("btnEditCurrentOS").onclick=()=>{ const os=state.os.find(o=>o.id===state.editingOSId); $("os_id").value=os.id; $("os_data").value=os.data; $("os_tipo").value=os.tipo; $("os_cliente").value=os.clienteId; $("os_colab").value=os.colabId; $("os_prog").value=os.qtdProg; $("os_obs").value=os.obs; $("osFormContainer").classList.remove("hidden"); $("osExecContainer").classList.add("hidden"); };
+    $("btnAddExec").onclick=async()=>{ const os=state.os.find(o=>o.id===state.editingOSId); const q=Number($("exec_qtd").value); const d=$("exec_data").value; const cur=(os.exec||[]).reduce((a,b)=>a+Number(b.qtd),0); if(cur+q>os.qtdProg) return showToast("Excede Qtd!","error"); const ne=[...(os.exec||[]),{data:d, qtd:q}]; await updateDoc(doc(db,"os",os.id),{exec:ne}); renderOSExec({...os, exec:ne}); };
+    window.rmOSItem=async(oid,i)=>{ const os=state.os.find(o=>o.id===oid); const ne=[...os.exec]; ne.splice(i,1); await updateDoc(doc(db,"os",oid),{exec:ne}); renderOSExec({...os, exec:ne}); };
+    window.closeDrawerOS=()=>{ $("drawerOS").classList.remove("open"); };
 
-      if(sobra <= 0){ alert("Essa OS já está completa (Fechada)."); return; }
-      if(qtd > sobra) qtd = sobra;
+    // INIT
+    onSnapshot(collection(db,"clientes"),s=>{ state.clientes=s.docs.map(d=>({id:d.id,...d.data()})); $("os_cliente").innerHTML=state.clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join(""); renderDashTable(); renderKPIs(); $("cliSearch").oninput(); });
+    onSnapshot(collection(db,"os"),s=>{ state.os=s.docs.map(d=>({id:d.id,...d.data()})); renderOSTable(); renderDashTable(); renderKPIs(); renderCharts(); if(state.editingOSId && $("drawerOS").classList.contains("open")) renderOSExec(state.os.find(o=>o.id===state.editingOSId)); });
+    onSnapshot(collection(db,"colabs"),s=>{ state.colabs=s.docs.map(d=>({id:d.id,...d.data()})); const h=state.colabs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join(""); $("cli_resp").innerHTML=`<option value="">Sem Resp.</option>`+h; $("os_colab").innerHTML=h; $("coTableBody").innerHTML=state.colabs.map(c=>`<tr><td>${c.nome}</td><td>${c.prevDia||0}</td><td>${c.corrDia||0}</td><td><button class="btn sm" onclick="window.editCo('${c.id}')">Ed</button></td></tr>`).join(""); });
 
-      const newExec = [...(o.exec || []), {data, qtd}];
+    // EXPORT
+    $("btnExport").onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(state)],{type:"application/json"})); a.download=`pcm_${todayISO()}.json`; a.click(); };
+    $("fileImport").onchange=(e)=>{ const r=new FileReader(); r.onload=async(ev)=>{ const d=JSON.parse(ev.target.result); if(d.clientes)for(let c of d.clientes)await setDoc(doc(db,"clientes",c.id),c); if(d.os)for(let o of d.os)await setDoc(doc(db,"os",o.id),o); if(d.colabs)for(let k of d.colabs)await setDoc(doc(db,"colabs",k.id),k); showToast("Importado"); }; r.readAsText(e.target.files[0]); };
 
-      try{
-        await updateDoc(doc(db,"os",o.id), { exec: newExec, updatedAt: serverTimestamp() });
-        await ensureClosedAtRemote({ ...o, exec: newExec });
-      }catch(e){
-        alert("Falha ao lançar execução.");
-      }
-    });
-
-    $("btnOSExecUndo").addEventListener("click", async ()=>{
-      if(!currentOSId) return;
-      const o = getOSById(currentOSId);
-      if(!o) return;
-
-      if(!o.exec || o.exec.length===0){
-        alert("Não há execuções para desfazer.");
-        return;
-      }
-
-      const newExec = o.exec.slice(0,-1);
-
-      try{
-        await updateDoc(doc(db,"os",o.id), { exec: newExec, updatedAt: serverTimestamp() });
-        await ensureClosedAtRemote({ ...o, exec: newExec });
-      }catch(e){
-        alert("Falha ao desfazer.");
-      }
-    });
-
-    // =============================
-    // Render geral
-    // =============================
-    function renderAll(){
-      $("todayPill").textContent = "Hoje: " + fmtDate(todayISO());
-
-      renderClienteRespSelect();
-      renderOSClienteSelect();
-      renderOSColabSelect();
-
-      renderKPIs();
-      renderDashTable();
-      renderClientesTable();
-      renderOSTable();
-      renderColabsTable();
-      renderCharts();
-    }
-
-    // =============================
-    // Clock
-    // =============================
-    function tickClock(){
-      const d = new Date();
-      const hh = String(d.getHours()).padStart(2,"0");
-      const mm = String(d.getMinutes()).padStart(2,"0");
-      const ss = String(d.getSeconds()).padStart(2,"0");
-      $("clockPill").textContent = `${hh}:${mm}:${ss}`;
-    }
-    setInterval(tickClock, 1000);
-    tickClock();
-
-    // init forms + realtime
-    clearOSForm();
-    clearClienteForm();
-    clearColabForm();
-    renderAll();
-    iniciarRealtime();
   </script>
 </body>
 </html>
-
