@@ -25,14 +25,16 @@ exports.handler = async function(event, context) {
 
         const accessToken = loginData.result.accessToken;
 
-        // 2. DATA FIXA (Formato Internacional OBRIGATÓRIO: Ano-Mês-Dia)
-        // Aqui estamos pegando as tarefas de Fevereiro de 2026
+        // 2. BUSCA TAREFAS
+        // Data fixa para pegar suas tarefas de Fevereiro de 2026
         const dataBusca = "2026-02-25"; 
         
         console.log(`Buscando tarefas para: ${dataBusca}`);
 
-        // A URL deve usar 'dateFrom' e 'dateTo'
-        const url = `https://api.auvo.com.br/v2/tasks?dateFrom=${dataBusca}&dateTo=${dataBusca}`;
+        // --- CORREÇÃO AQUI ---
+        // Trocamos 'dateFrom' por 'startDate' e 'dateTo' por 'endDate'
+        // Baseado na dica do erro que pediu "startDate"
+        const url = `https://api.auvo.com.br/v2/tasks?startDate=${dataBusca}&endDate=${dataBusca}`;
 
         const taskReq = await fetch(url, {
             method: "GET",
