@@ -8,6 +8,7 @@ exports.handler = async function(event, context) {
 
     try {
         // 1. LOGIN
+        // Mantemos 'apiToken' que descobrimos ser o correto
         const loginReq = await fetch("https://api.auvo.com.br/v2/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -25,16 +26,16 @@ exports.handler = async function(event, context) {
 
         const accessToken = loginData.result.accessToken;
 
-        // 2. BUSCA TAREFAS
-        // Data fixa para pegar suas tarefas de Fevereiro de 2026
-        const dataBusca = "2026-02-25"; 
+        // 2. BUSCAR TAREFAS (Ajuste Final)
+        // Voltamos para 'dateFrom' e 'dateTo' que funcionam.
+        // E colocamos o intervalo do MÊS TODO de Fevereiro/2026 para garantir.
         
-        console.log(`Buscando tarefas para: ${dataBusca}`);
+        const dataInicio = "2026-02-01";
+        const dataFim = "2026-02-28";
+        
+        console.log(`Buscando tarefas entre ${dataInicio} e ${dataFim}`);
 
-        // --- CORREÇÃO AQUI ---
-        // Trocamos 'dateFrom' por 'startDate' e 'dateTo' por 'endDate'
-        // Baseado na dica do erro que pediu "startDate"
-        const url = `https://api.auvo.com.br/v2/tasks?startDate=${dataBusca}&endDate=${dataBusca}`;
+        const url = `https://api.auvo.com.br/v2/tasks?dateFrom=${dataInicio}&dateTo=${dataFim}`;
 
         const taskReq = await fetch(url, {
             method: "GET",
