@@ -1,17 +1,13 @@
-// A palavra 'async' aqui embaixo é OBRIGATÓRIA!
 exports.handler = async function(event, context) {
-    
-    // 1. Pegar senhas
     const API_KEY = process.env.AUVO_API_KEY;
     const TOKEN = process.env.AUVO_TOKEN;
 
     if (!API_KEY || !TOKEN) {
-        return { statusCode: 500, body: JSON.stringify({ error: "Chaves não configuradas no Netlify." }) };
+        return { statusCode: 500, body: JSON.stringify({ error: "Chaves não configuradas." }) };
     }
 
     try {
-        // 2. Fazer Login (com await)
-        // ATENÇÃO: Use 'apiToken' e não 'token'
+        // 1. LOGIN
         const loginReq = await fetch("https://api.auvo.com.br/v2/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -20,9 +16,7 @@ exports.handler = async function(event, context) {
         
         const loginData = await loginReq.json();
         
-        // Se o login falhar, mostra o erro exato
         if (!loginData.result || !loginData.result.accessToken) {
-            console.log("Erro Login Auvo:", JSON.stringify(loginData));
             return { 
                 statusCode: 401, 
                 body: JSON.stringify({ error: "Login Recusado: " + JSON.stringify(loginData) }) 
@@ -31,16 +25,16 @@ exports.handler = async function(event, context) {
 
         const accessToken = loginData.result.accessToken;
 
-        // 3. Buscar Tarefas (com await)
-        // Pegando data de hoje (YYYY-MM-DD)
-        const hoje = new Date().toISOString().split('T')[0];
+        // 2. DATA FIXA (Formato Internacional OBRIGATÓRIO: Ano-Mês-Dia)
+        // Aqui estamos pegando as tarefas de Fevereiro de 2026
+        const dataBusca = "2026-02-25"; 
         
-        // Se quiser testar datas fixas, descomente abaixo:
-        // const hoje = "2026-02-25"; 
+        console.log(`Buscando tarefas para: ${dataBusca}`);
 
-        console.log(`Buscando tarefas para: ${hoje}`);
+        // A URL deve usar 'dateFrom' e 'dateTo'
+        const url = `https://api.auvo.com.br/v2/tasks?dateFrom=${dataBusca}&dateTo=${dataBusca}`;
 
-        const taskReq = await fetch(`https://api.auvo.com.br/v2/tasks?dateFrom=${hoje}&dateTo=${hoje}`, {
+        const taskReq = await fetch(url, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${accessToken}`,
@@ -50,21 +44,13 @@ exports.handler = async function(event, context) {
         
         const taskData = await taskReq.json();
 
-        // 4. Retornar Sucesso
         return {
             statusCode: 200,
-            headers: {
-                "Access-Control-Allow-Origin": "*", // Libera acesso pro seu site
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(taskData)
         };
 
     } catch (error) {
-        console.error("Erro Geral:", error);
-        return { 
-            statusCode: 500, 
-            body: JSON.stringify({ error: "Erro Interno: " + error.message }) 
-        };
+        return { statusCode: 500, body: JSON.stringify({ error: "Erro Interno: " + error.message }) };
     }
 };
