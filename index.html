@@ -119,6 +119,7 @@
     
     .btn { background: var(--surface); border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
     .btn.primary { background: var(--primary); border: none; }
+    .btn.auvo { background: #2563eb; color: white; border: 1px solid #3b82f6; display: flex; align-items: center; gap: 5px; }
     .btn.sm { font-size: 10px; padding: 3px 6px; }
 
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -249,7 +250,13 @@
       <div class="normal-grid">
         <div class="col-12 card">
           <div style="display:flex; justify-content:space-between; margin-bottom:10px">
-            <button class="btn primary" onclick="openOSModal()">+ Nova OS</button>
+            <div style="display:flex; gap:10px">
+                <button class="btn primary" onclick="openOSModal()">+ Nova OS</button>
+                <button class="btn auvo" id="btnAuvoSync">
+                    <span class="material-symbols-rounded" style="font-size:16px">sync</span>
+                    Sincronizar Auvo
+                </button>
+            </div>
             <div style="display:flex; gap:10px">
               <select id="osFilterStatus"><option value="">Todos</option><option>Aberta</option><option>Parcial</option><option>Fechada</option></select>
               <input id="osSearch" placeholder="Buscar..." />
@@ -498,7 +505,6 @@
           if (sortMode === 'atraso') {
               const metaA = Number(a.metaPrev) || Number(a.qtdEquip) || 0;
               const metaB = Number(b.metaPrev) || Number(b.qtdEquip) || 0;
-              // Logica simplificada: prioriza quem tem data limite vencida
               const atrasadoA = (a.dataLimite && todayISO() > a.dataLimite) ? 1 : 0;
               const atrasadoB = (b.dataLimite && todayISO() > b.dataLimite) ? 1 : 0;
               return atrasadoB - atrasadoA; 
@@ -576,6 +582,50 @@
             return `<tr><td>${fmtDate(o.data)}</td><td>${c?c.nome:"?"}</td><td>${o.tipo}</td><td><span class="badge ${badge}">${st}</span></td><td>${ex}/${tot}</td><td>${r?r.nome:"-"}</td><td class="text-right"><button class="btn sm" onclick="window.openOS('${o.id}')">Abrir</button></td></tr>`;
         }).join("");
     }
+
+    // --- AUVO INTEGRATION ---
+    $("btnAuvoSync").onclick = async () => {
+        showToast("Conectando ao Auvo...");
+        try {
+            const req = await fetch('/.netlify/functions/auvo');
+            const data = await req.json();
+
+            if (data.error) throw new Error(data.error);
+            if (!data.result || data.result.length === 0) {
+                showToast("Nenhuma tarefa Auvo hoje", "warning");
+                return;
+            }
+
+            // Converter tarefas Auvo para OS
+            // Nota: Isso apenas mostra no console e na tabela VISUALMENTE.
+            // Para salvar no Firebase, você precisaria de um passo extra de confirmação.
+            
+            showToast(`Recebidas ${data.result.length} tarefas!`);
+            
+            // Adiciona temporariamente à lista para visualização
+            data.result.forEach(task => {
+                const newOS = {
+                    id: "AUVO-" + task.taskID,
+                    data: task.taskDate.split('T')[0],
+                    tipo: "Auvo", // Identificar que veio de lá
+                    clienteId: "0", // Temporário
+                    // Tenta achar o cliente pelo nome, senão usa o nome direto na OBS
+                    obs: `[AUVO] Cliente: ${task.customer.name} - Status: ${task.taskStatus}`,
+                    qtdProg: 1,
+                    exec: task.taskStatus === "Finalizado" ? [{data: todayISO(), qtd: 1}] : []
+                };
+                
+                // Adiciona na lista local (memória)
+                state.os.push(newOS);
+            });
+
+            renderOSTable();
+
+        } catch (e) {
+            console.error(e);
+            showToast("Erro na sincronização", "danger");
+        }
+    };
 
     // --- ACTIONS ---
     window.detalhe = (id) => { $("tab-os").click(); document.querySelector('[data-tab="os"]').click(); setTimeout(()=>{ const c=state.clientes.find(x=>x.id===id); if(c){ $("osSearch").value=c.nome; renderOSTable();} },100); };
