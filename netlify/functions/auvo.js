@@ -7,8 +7,7 @@ exports.handler = async function(event, context) {
     }
 
     try {
-        // 1. LOGIN
-        // Mantemos 'apiToken' que descobrimos ser o correto
+        // 1. LOGIN (Este passo já está validado)
         const loginReq = await fetch("https://api.auvo.com.br/v2/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -18,24 +17,18 @@ exports.handler = async function(event, context) {
         const loginData = await loginReq.json();
         
         if (!loginData.result || !loginData.result.accessToken) {
-            return { 
-                statusCode: 401, 
-                body: JSON.stringify({ error: "Login Recusado: " + JSON.stringify(loginData) }) 
-            };
+            return { statusCode: 401, body: JSON.stringify({ error: "Erro login" }) };
         }
 
         const accessToken = loginData.result.accessToken;
 
-        // 2. BUSCAR TAREFAS (Ajuste Final)
-        // Voltamos para 'dateFrom' e 'dateTo' que funcionam.
-        // E colocamos o intervalo do MÊS TODO de Fevereiro/2026 para garantir.
-        
+        // 2. BUSCAR TAREFAS (NOMES DOS CAMPOS V2)
+        // Usando o mês de Fevereiro de 2026 como base
         const dataInicio = "2026-02-01";
         const dataFim = "2026-02-28";
         
-        console.log(`Buscando tarefas entre ${dataInicio} e ${dataFim}`);
-
-        const url = `https://api.auvo.com.br/v2/tasks?dateFrom=${dataInicio}&dateTo=${dataFim}`;
+        // Conforme a documentação oficial: taskDateFrom e taskDateTo
+        const url = `https://api.auvo.com.br/v2/tasks?taskDateFrom=${dataInicio}&taskDateTo=${dataFim}`;
 
         const taskReq = await fetch(url, {
             method: "GET",
@@ -54,6 +47,6 @@ exports.handler = async function(event, context) {
         };
 
     } catch (error) {
-        return { statusCode: 500, body: JSON.stringify({ error: "Erro Interno: " + error.message }) };
+        return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
     }
 };
