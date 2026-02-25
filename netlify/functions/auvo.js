@@ -3,11 +3,14 @@ exports.handler = async function(event, context) {
     const TOKEN = process.env.AUVO_TOKEN;
 
     if (!API_KEY || !TOKEN) {
-        return { statusCode: 500, body: JSON.stringify({ error: "Chaves não configuradas." }) };
+        return { 
+            statusCode: 500, 
+            body: JSON.stringify({ error: "Chaves não configuradas no Netlify." }) 
+        };
     }
 
     try {
-        // 1. LOGIN (Este passo já está validado)
+        // 1. LOGIN - Obtendo o Bearer Token
         const loginReq = await fetch("https://api.auvo.com.br/v2/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -17,17 +20,19 @@ exports.handler = async function(event, context) {
         const loginData = await loginReq.json();
         
         if (!loginData.result || !loginData.result.accessToken) {
-            return { statusCode: 401, body: JSON.stringify({ error: "Erro login" }) };
+            return { 
+                statusCode: 401, 
+                body: JSON.stringify({ error: "Erro de autenticação no Auvo." }) 
+            };
         }
 
         const accessToken = loginData.result.accessToken;
 
-        // 2. BUSCAR TAREFAS (NOMES DOS CAMPOS V2)
-        // Usando o mês de Fevereiro de 2026 como base
+        // 2. BUSCAR TAREFAS - Nomes de campos oficiais da API V2
+        // taskDateFrom e taskDateTo são os parâmetros corretos conforme a documentação
         const dataInicio = "2026-02-01";
         const dataFim = "2026-02-28";
         
-        // Conforme a documentação oficial: taskDateFrom e taskDateTo
         const url = `https://api.auvo.com.br/v2/tasks?taskDateFrom=${dataInicio}&taskDateTo=${dataFim}`;
 
         const taskReq = await fetch(url, {
@@ -40,13 +45,20 @@ exports.handler = async function(event, context) {
         
         const taskData = await taskReq.json();
 
+        // 3. RETORNO PARA O DASHBOARD
         return {
             statusCode: 200,
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*" 
+            },
             body: JSON.stringify(taskData)
         };
 
     } catch (error) {
-        return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+        return { 
+            statusCode: 500, 
+            body: JSON.stringify({ error: "Erro Interno: " + error.message }) 
+        };
     }
 };
