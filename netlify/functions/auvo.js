@@ -1,34 +1,70 @@
-// --- TRECHO NOVO: PEGAR UMA JANELA DE DATAS MAIOR ---
-        
-        // Função simples para somar/subtrair dias
-        const somarDias = (dias) => {
-            const data = new Date();
-            data.setDate(data.getDate() + dias);
-            return data.toISOString().split('T')[0];
-        };
+// A palavra 'async' aqui embaixo é OBRIGATÓRIA!
+exports.handler = async function(event, context) {
+    
+    // 1. Pegar senhas
+    const API_KEY = process.env.AUVO_API_KEY;
+    const TOKEN = process.env.AUVO_TOKEN;
 
-        const dataInicio = somarDias(-7); // 7 dias atrás
-        const dataFim = somarDias(7);     // 7 dias pra frente
-        
-        console.log(`Buscando tarefas de ${dataInicio} até ${dataFim}`);
+    if (!API_KEY || !TOKEN) {
+        return { statusCode: 500, body: JSON.stringify({ error: "Chaves não configuradas no Netlify." }) };
+    }
 
-        const taskReq = await fetch(`https://api.auvo.com.br/v2/tasks?dateFrom=${dataInicio}&dateTo=${dataFim}`, {
+    try {
+        // 2. Fazer Login (com await)
+        // ATENÇÃO: Use 'apiToken' e não 'token'
+        const loginReq = await fetch("https://api.auvo.com.br/v2/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ apiKey: API_KEY, apiToken: TOKEN }) 
+        });
+        
+        const loginData = await loginReq.json();
+        
+        // Se o login falhar, mostra o erro exato
+        if (!loginData.result || !loginData.result.accessToken) {
+            console.log("Erro Login Auvo:", JSON.stringify(loginData));
+            return { 
+                statusCode: 401, 
+                body: JSON.stringify({ error: "Login Recusado: " + JSON.stringify(loginData) }) 
+            };
+        }
+
+        const accessToken = loginData.result.accessToken;
+
+        // 3. Buscar Tarefas (com await)
+        // Pegando data de hoje (YYYY-MM-DD)
+        const hoje = new Date().toISOString().split('T')[0];
+        
+        // Se quiser testar datas fixas, descomente abaixo:
+        // const hoje = "2026-02-25"; 
+
+        console.log(`Buscando tarefas para: ${hoje}`);
+
+        const taskReq = await fetch(`https://api.auvo.com.br/v2/tasks?dateFrom=${hoje}&dateTo=${hoje}`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${accessToken}`,
                 "Content-Type": "application/json"
             }
         });
-        // -----------------------------------------------------
-
+        
         const taskData = await taskReq.json();
 
+        // 4. Retornar Sucesso
         return {
             statusCode: 200,
+            headers: {
+                "Access-Control-Allow-Origin": "*", // Libera acesso pro seu site
+                "Content-Type": "application/json"
+            },
             body: JSON.stringify(taskData)
         };
 
     } catch (error) {
-        return { statusCode: 500, body: JSON.stringify({ error: "Erro Geral: " + error.message }) };
+        console.error("Erro Geral:", error);
+        return { 
+            statusCode: 500, 
+            body: JSON.stringify({ error: "Erro Interno: " + error.message }) 
+        };
     }
 };
