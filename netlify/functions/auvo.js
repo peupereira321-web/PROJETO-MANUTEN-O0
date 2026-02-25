@@ -2,33 +2,28 @@ exports.handler = async function(event, context) {
     const API_KEY = process.env.AUVO_API_KEY;
     const TOKEN = process.env.AUVO_TOKEN;
 
-    // 1. Verifica se as chaves existem no Netlify
     if (!API_KEY || !TOKEN) {
-        return { statusCode: 500, body: JSON.stringify({ error: "Chaves não configuradas no Netlify." }) };
+        return { statusCode: 500, body: JSON.stringify({ error: "Chaves não configuradas." }) };
     }
 
     try {
-        // 2. Tenta fazer o login
+        // --- A CORREÇÃO ESTÁ AQUI EMBAIXO ---
+        // Trocamos "token" por "apiToken"
         const loginReq = await fetch("https://api.auvo.com.br/v2/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ apiKey: API_KEY, token: TOKEN })
+            body: JSON.stringify({ apiKey: API_KEY, apiToken: TOKEN }) 
         });
         
         const loginData = await loginReq.json();
         
-        // --- AQUI ESTÁ A MUDANÇA: O DEDO-DURO ---
-        // Se falhar, ele vai devolver a mensagem exata que o Auvo mandou
         if (!loginData.result || !loginData.result.accessToken) {
             console.log("Erro Auvo:", JSON.stringify(loginData));
             return { 
                 statusCode: 401, 
-                body: JSON.stringify({ 
-                    error: "Auvo Recusou: " + JSON.stringify(loginData) 
-                }) 
+                body: JSON.stringify({ error: "Auvo Recusou: " + JSON.stringify(loginData) }) 
             };
         }
-        // ------------------------------------------
 
         const accessToken = loginData.result.accessToken;
         const hoje = new Date().toISOString().split('T')[0];
